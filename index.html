@@ -10,7 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="TriDagboek">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>TriDagboek</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -215,7 +215,7 @@ table.laps{margin:2px 0 14px;font-variant-numeric:tabular-nums}.laps caption{tex
 .await{background:var(--soft);border-radius:14px;padding:14px 16px}.await p{margin-bottom:10px}.await button{min-height:40px;font-size:15px}
 .msync{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute);margin:0 0 6px}.msync:empty{display:none}.gdot{width:8px;height:8px;border-radius:50%;background:var(--go);flex:none}
 .lnkrow{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}.lnkrow:first-child{border-top:0;padding-top:0}.lnkrow b{margin-right:8px}.lnkrow .note{margin-top:4px}.lnkrow .chk{margin-top:8px}.lnkrow>button{flex:none;min-height:40px;font-size:15px}
-.gpform{padding:4px 0 12px}.gpsteps{margin:0 0 12px;padding-left:20px;display:grid;gap:6px;font-size:15px}.gpk{max-width:460px}.meldbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.gpform{padding:4px 0 12px}.gpsteps{margin:0 0 12px;padding-left:20px;display:grid;gap:6px;font-size:15px}.gpk{max-width:460px}.meldbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}@media(max-width:899px){body.kb .tabs{display:none}}
 .pill{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--soft);color:var(--mute)}.pill.on{background:var(--go);color:#fff}
 .srcb{font-size:12.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--soft);color:var(--mute)}
 .rseg{border:0;padding:0;margin:16px 0 0;min-width:0}.rseg legend{font-size:14px;font-weight:600;margin-bottom:6px;padding:0}
@@ -864,6 +864,19 @@ if(PUSH_OK()){navigator.serviceWorker.register("sw.js").catch(e=>console.warn("s
   navigator.serviceWorker.addEventListener("message",e=>{const d=e.data||{};
     if(d.type==="td-nav"&&d.url){try{location.hash=new URL(d.url).hash||"#vandaag"}catch(x){}}
     if(d.type==="td-refresh"&&sb&&ME&&AUTHST==="klaar"){const f=document.activeElement;if(f&&/INPUT|TEXTAREA|SELECT/.test(f.tagName))return;softReload().catch(()=>{})}})}
+/* ---------- menubalk onderaan houden op iPhone (toetsenbord-fout in WebKit) ---------- */
+(()=>{const nav=$("nav"),vv=window.visualViewport;if(!nav)return;
+  const isField=el=>!!el&&(el.tagName==="TEXTAREA"||el.isContentEditable||(el.tagName==="INPUT"&&!/^(checkbox|radio|button|submit|reset|range|color|file|image)$/i.test(el.type||"")));
+  const fixed=()=>getComputedStyle(nav).position==="fixed";
+  let raf=0;
+  const place=()=>{raf=0;if(!vv||!fixed()||Math.abs((vv.scale||1)-1)>.01){nav.style.transform="";return}const d=vv.offsetTop+vv.height-window.innerHeight,lim=window.innerHeight*.6;nav.style.transform=Math.abs(d)>1&&Math.abs(d)<lim?"translateY("+Math.round(d)+"px)":""};
+  const later=()=>{if(!raf)raf=requestAnimationFrame(place)};
+  const heal=()=>{if(!fixed())return;nav.style.display="none";void nav.offsetHeight;nav.style.display="";place()};
+  document.addEventListener("focusin",e=>{if(isField(e.target))document.body.classList.add("kb")});
+  document.addEventListener("focusout",e=>{if(!isField(e.target))return;setTimeout(()=>{if(!isField(document.activeElement))document.body.classList.remove("kb");heal()},150);setTimeout(heal,700)});
+  if(vv){vv.addEventListener("resize",later);vv.addEventListener("scroll",later)}
+  addEventListener("scroll",later,{passive:true});addEventListener("resize",later);addEventListener("hashchange",()=>setTimeout(heal,50));
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(heal,300)});addEventListener("pageshow",()=>setTimeout(heal,300))})();
 async function softReload(){if(svT)await flush();const keep={sel,sw0,wk0,cSel,cTab,ctab,chan};await loadAll();({sel,sw0,wk0}=keep);cSel=keep.cSel;cTab=keep.cTab;ctab=keep.ctab;chan=keep.chan;if(AUTHST==="klaar"){all();route()}}
 let LIVE=null;
 function live(){if(LIVE||!sb)return;LIVE=sb.channel("td-live")
