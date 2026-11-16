@@ -44,6 +44,19 @@ Het trainingsdagboek van de club: een statische website (GitHub Pages) met een S
 
 Er wordt geen gps-locatie bewaard; per training enkel hartslag, tempo/vermogen en hoogte per 30 seconden.
 
+## Persoonlijke Garmin-sleutel
+
+Zolang de club-app niet goedgekeurd is door Garmin, kan elk lid koppelen met zijn eigen
+persoonlijke sleutel (Garmin Connect Personal API, https://connect.garmin.com/app/settings/personalApiToken).
+
+- `config.js`: `garminKey: true`.
+- Migraties `0004_garmin_persoonlijk.sql` (tabel `garmin_personal`, enkel leesbaar voor de server) en
+  `0005_garmin_kwartier.sql` (pg_cron roept elk kwartier `/functions/v1/garmin/cron` aan, met een sleutel uit de Vault).
+- De functie `garmin` (bestanden `index.ts` en `personal.ts`) wisselt de sleutel om voor een toegangstoken (24 uur),
+  haalt trainingen op (met het .fit-bestand voor lopen en fietsen) en elk uur slaap, HRV, rustpols en Body Battery.
+- Garmin bedoelt de persoonlijke sleutel voor eigen gebruik, niet voor commerciële apps met veel gebruikers.
+  Voor de club op lange termijn blijft het Developer Program (hierboven) de juiste weg.
+
 ## Training opladen
 
 Tot de Garmin- en Wahoo-koppeling klaar is, laden leden hun training op als `.fit` of `.zip` (Garmin Connect: activiteit, tandwiel, Origineel exporteren). De website leest het bestand in de browser: duur, afstand, hartslag, vermogen, hoogte, rondes, grafieken, tijd in zones en hartslagdrift. Er wordt geen gps-route bewaard.

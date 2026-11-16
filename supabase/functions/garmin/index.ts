@@ -3,9 +3,14 @@
 //   GET  /garmin/callback    (Garmin)        -> wisselt de code voor tokens, terug naar de website
 //   POST /garmin/disconnect  (lid ingelogd)  -> verbreekt de koppeling bij Garmin en bij ons
 //   POST /garmin/push        (Garmin)        -> slaap, HRV, rustpols, Body Battery en trainingen
+//   POST /garmin/pkey        (lid ingelogd)  -> persoonlijke Garmin-sleutel opslaan en meteen ophalen
+//   POST /garmin/psync       (lid ingelogd)  -> nu ophalen met de persoonlijke sleutel
+//   POST /garmin/punkey      (lid ingelogd)  -> persoonlijke sleutel verwijderen
+//   POST /garmin/cron        (pg_cron)       -> elk kwartier ophalen voor alle leden met een sleutel
 // Deploy zonder JWT-controle (Garmin stuurt geen Supabase-token); leden worden hier zelf gecontroleerd.
 // Geheimen: GARMIN_CLIENT_ID, GARMIN_CLIENT_SECRET, SITE_URL. Er wordt nooit een gps-locatie bewaard.
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { exchangeKey, KeyError, syncUser, type PRow } from "./personal.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 // Supabase-sleutels: eerst de nieuwe (sb_secret / sb_publishable), anders de oude JWT-sleutels.
@@ -190,9 +195,46 @@ Deno.serve(async (req) => {
       await db.from("garmin_links").upsert({ user_id: pk.user_id, garmin_user_id: userId, access_token: tok.access_token, refresh_token: tok.refresh_token ?? null, expires_at: new Date(Date.now() + (tok.expires_in ?? 3600) * 1000).toISOString() });
       return back("ok");
     }
-    if (!CLIENT_ID || !CLIENT_SECRET) return json({ error: "niet_ingesteld" }, 503);
+    if (path === "cron" && req.method === "POST") {
+      const k = req.headers.get("x-cron-key") ?? "";
+      const { data: ok } = k ? await db.rpc("garmin_cron_ok", { k }) : { data: false };
+      if (ok !== true) return json({ error: "nee" }, 401);
+      const { data: rows } = await db.from("garmin_personal").select("*");
+      let n = 0, users = 0;
+      for (const row of (rows ?? []) as PRow[]) {
+        // een ingetrokken sleutel nog hoogstens om de 6 uur proberen
+        if (row.last_error === "sleutel" && row.last_sync && Date.now() - Date.parse(row.last_sync) < 6 * 3600_000) continue;
+        users++; n += (await syncUser(db, row)).n;
+      }
+      return json({ ok: true, users, n });
+    }
     const user = await member(req);
     if (!user) return json({ error: "niet_ingelogd" }, 401);
+    if (path === "pkey" && req.method === "POST") {
+      const body = await req.json().catch(() => ({}));
+      const key = typeof body.key === "string" ? body.key.replace(/\s+/g, "") : "";
+      if (!/^[\x21-\x7e]{16,512}$/.test(key)) return json({ error: "ongeldig" }, 400);
+      let t;
+      try { t = await exchangeKey(key); }
+      catch (e) { return e instanceof KeyError ? json({ error: "sleutel_ongeldig" }, 400) : json({ error: "garmin_druk" }, 502); }
+      const row: PRow = { user_id: user.id, api_key: key, token: t.token, token_exp: t.exp.toISOString(), last_sync: null, last_health: null, last_ok: null, last_error: null };
+      const { error } = await db.from("garmin_personal").upsert(row);
+      if (error) { console.error("pkey", error.message); return json({ error: "fout" }, 500); }
+      const r = await syncUser(db, row, { health: true });
+      return json({ ok: true, n: r.n, error: r.error });
+    }
+    if (path === "psync" && req.method === "POST") {
+      const { data: row } = await db.from("garmin_personal").select("*").eq("user_id", user.id).maybeSingle();
+      if (!row) return json({ error: "geen_sleutel" }, 404);
+      if (row.last_sync && Date.now() - Date.parse(row.last_sync) < 60_000) return json({ ok: true, n: 0, wait: true });
+      const r = await syncUser(db, row as PRow, { health: true });
+      return json({ ok: true, n: r.n, error: r.error });
+    }
+    if (path === "punkey" && req.method === "POST") {
+      await db.from("garmin_personal").delete().eq("user_id", user.id);
+      return json({ ok: true });
+    }
+    if (!CLIENT_ID || !CLIENT_SECRET) return json({ error: "niet_ingesteld" }, 503);
     if (path === "start" && req.method === "POST") {
       const verifier = rand(48), state = rand(24);
       const challenge = b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
