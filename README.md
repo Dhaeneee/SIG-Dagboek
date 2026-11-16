@@ -57,6 +57,15 @@ persoonlijke sleutel (Garmin Connect Personal API, https://connect.garmin.com/ap
 - Garmin bedoelt de persoonlijke sleutel voor eigen gebruik, niet voor commerciële apps met veel gebruikers.
   Voor de club op lange termijn blijft het Developer Program (hierboven) de juiste weg.
 
+## Pushmeldingen
+
+- `sw.js` (service worker, enkel voor meldingen), `manifest.webmanifest` en de iconen maken van de site een app voor het beginscherm.
+- Functie `push` (bestanden `index.ts` en `webpush.ts`, deploy zonder JWT-controle): versleuteling volgens RFC 8291 en VAPID,
+  zonder externe bibliotheek. De VAPID-sleutels maakt de functie zelf de eerste keer en bewaart ze in `app_keys` (enkel server).
+- Migratie `0006_meldingen.sql`: tabel `push_subs` en triggers op `garmin_data` (nieuwe training), `cmsg` (bericht) en
+  `profiles` (nieuw lid), die via pg_net `/functions/v1/push/event` aanroepen met de sleutel uit de Vault.
+- Op iPhone werken meldingen enkel als de site via Safari op het beginscherm staat (iOS 16.4 of nieuwer).
+
 ## Training opladen
 
 Tot de Garmin- en Wahoo-koppeling klaar is, laden leden hun training op als `.fit` of `.zip` (Garmin Connect: activiteit, tandwiel, Origineel exporteren). De website leest het bestand in de browser: duur, afstand, hartslag, vermogen, hoogte, rondes, grafieken, tijd in zones en hartslagdrift. Er wordt geen gps-route bewaard.

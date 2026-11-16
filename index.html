@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#10242b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TriDagboek">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>TriDagboek</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -208,7 +215,7 @@ table.laps{margin:2px 0 14px;font-variant-numeric:tabular-nums}.laps caption{tex
 .await{background:var(--soft);border-radius:14px;padding:14px 16px}.await p{margin-bottom:10px}.await button{min-height:40px;font-size:15px}
 .msync{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute);margin:0 0 6px}.msync:empty{display:none}.gdot{width:8px;height:8px;border-radius:50%;background:var(--go);flex:none}
 .lnkrow{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}.lnkrow:first-child{border-top:0;padding-top:0}.lnkrow b{margin-right:8px}.lnkrow .note{margin-top:4px}.lnkrow .chk{margin-top:8px}.lnkrow>button{flex:none;min-height:40px;font-size:15px}
-.gpform{padding:4px 0 12px}.gpsteps{margin:0 0 12px;padding-left:20px;display:grid;gap:6px;font-size:15px}.gpk{max-width:460px}
+.gpform{padding:4px 0 12px}.gpsteps{margin:0 0 12px;padding-left:20px;display:grid;gap:6px;font-size:15px}.gpk{max-width:460px}.meldbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .pill{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--soft);color:var(--mute)}.pill.on{background:var(--go);color:#fff}
 .srcb{font-size:12.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--soft);color:var(--mute)}
 .rseg{border:0;padding:0;margin:16px 0 0;min-width:0}.rseg legend{font-size:14px;font-weight:600;margin-bottom:6px;padding:0}
@@ -609,6 +616,7 @@ body.onb #nav,body.onb .gearbtn,body.onb .count{display:none}body.onb #sub{visib
     <div class="set"><h3>Over jou</h3><p class="note">Je naam zoals je ploeg je kent. Je gewicht en je doel zie je enkel zelf, en je coach als je er een hebt.</p>
       <div class="f"><label>Naam<input id="s-naam" required maxlength="40"></label><label id="s-kgw">Gewicht (kg)<input id="s-kg" type="number" inputmode="decimal" step="0.1" min="30" max="200" required></label></div><div id="s-wg"></div></div>
     <div class="set" data-ath id="kopp"><h3>Horloge en apps</h3><p class="note">Gekoppeld komen je ochtendcheck en je trainingen vanzelf binnen, en krijg je na elke training een analyse. Wat je hier verandert, wordt meteen bewaard.</p><div id="links"></div></div>
+    <div class="set" id="meld"><h3>Meldingen</h3><div id="meldB"></div></div>
     <div class="set" id="rol"><h3>Je rol in de club</h3><p class="note">Kies je Coach, dan keurt de beheerder dat eerst goed. Pas daarna kunnen sporters je als coach kiezen.</p>
       <div class="srcs">
         <label class="src"><input type="radio" name="rol" value="zelf"><span><b>Sporter zonder coach</b><span>Je stelt zelf in hoe je traint: het plan van de website, bij te sturen met AI, of een plan uit een andere app.</span></span></label>
@@ -820,6 +828,42 @@ let GPK={};function applyGarmin(rows,st){const me=A(),by=id=>rows.filter(r=>r.us
   C().extra.filter(e=>e.coached&&e.p).forEach(e=>{const rr=by(e.id);e.p.gl=rr.length>0;garminInto(e,rr)})}
 async function garminPost(path,body){const {data:{session}}=await sb.auth.getSession();let r;try{r=await fetch(CFG.url+"/functions/v1/garmin/"+path,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+(session?session.access_token:""),apikey:CFG.key},body:JSON.stringify(body||{})})}catch(e){throw{code:"net"}}const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:j.error||"fout"};return j}
 async function garminCall(path){const {data:{session}}=await sb.auth.getSession();const r=await fetch(CFG.url+"/functions/v1/garmin/"+path,{method:"POST",headers:{Authorization:"Bearer "+(session?session.access_token:""),apikey:CFG.key}});const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:j.error||"fout"};return j}
+/* ---------- pushmeldingen ---------- */
+const PUSH_OK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window&&location.protocol!=="file:";
+const IOSDEV=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const STANDALONE=()=>(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+const devName=()=>{const u=navigator.userAgent;return /iPhone/.test(u)?"iPhone":/iPad/.test(u)||IOSDEV?"iPad":/Android/.test(u)?"Android":/Mac/.test(u)?"Mac":/Windows/.test(u)?"Windows":"Browser"};
+const u8key=k=>{const t=k.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-k.length%4)%4),b=atob(t),o=new Uint8Array(b.length);for(let i=0;i<b.length;i++)o[i]=b.charCodeAt(i);return o};
+async function pushCall(path,body,method){const {data:{session}}=await sb.auth.getSession();let r;try{r=await fetch(CFG.url+"/functions/v1/push/"+path,{method:method||"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+(session?session.access_token:""),apikey:CFG.key},body:method==="GET"?undefined:JSON.stringify(body||{})})}catch(e){throw{code:"net"}}const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:j.error||"fout"};return j}
+async function meldSub(){if(!PUSH_OK())return null;const r=await navigator.serviceWorker.getRegistration();return r?await r.pushManager.getSubscription():null}
+function meldWat(){const a=A(),p=(a&&a.p)||{},L=[];if(!CO(p))L.push("er een nieuwe training binnenkomt");if(p.rol==="gecoacht"||p.coachId)L.push("je coach je een bericht stuurt");if(p.rol==="coach")L.push("een sporter getraind heeft of je een bericht stuurt");if(PROF&&PROF.is_admin)L.push("een nieuw lid wacht op goedkeuring");
+  return L.length?"Je krijgt een melding als "+(L.length>1?L.slice(0,-1).join(", ")+" of "+L[L.length-1]:L[0])+".":"Je krijgt meldingen over je trainingen en berichten."}
+async function meldR(){const box=$("meldB");if(!box)return;
+  if(!PUSH_OK()){box.innerHTML='<p class="note">'+(IOSDEV&&!STANDALONE()?'Op een iPhone of iPad werken meldingen alleen in de app op je beginscherm. Open deze website in <b>Safari</b>, tik op <b>Deel</b> (het vierkantje met het pijltje omhoog) en kies <b>Zet op beginscherm</b>. Open TriDagboek daarna via het nieuwe icoon en kom hier terug.':'Deze browser ondersteunt geen meldingen. Probeer Chrome, Edge, Firefox of Safari.')+'</p>';return}
+  if(Notification.permission==="denied"){box.innerHTML='<p class="note">Je hebt meldingen voor TriDagboek geweigerd. Zet ze weer aan in de instellingen van je toestel of je browser (Meldingen, TriDagboek) en kom dan hier terug.</p>';return}
+  const sub=await meldSub().catch(()=>null);
+  box.innerHTML=(sub?'<p class="note"><span class="pill on">Aan op dit toestel</span></p><p class="note" style="margin-top:6px">'+meldWat()+'</p><div class="meldbtns"><button type="button" id="m-test">Testmelding sturen</button><button type="button" class="ghost" id="m-off">Uitzetten</button></div>'
+    :'<p class="note">'+meldWat()+' Je zet het per toestel aan.</p><div class="meldbtns"><button type="button" id="m-on">Meldingen aanzetten</button></div>')+'<p class="msg" id="mmsg" aria-live="polite"></p>'}
+const MERR={net:"Geen verbinding. Controleer je internet en probeer opnieuw.",niet_ingelogd:"Je bent niet meer ingelogd. Log opnieuw in.",ongeldig:"Dit toestel gaf een onbekend meldingsadres terug. Probeer het in een andere browser."};
+$("meldB").addEventListener("click",async e=>{const t=e.target,msg=x=>{const m=$("mmsg");if(m)m.textContent=x};
+  if(t.closest("#m-on")){const b=t.closest("#m-on");b.disabled=true;msg("Even geduld…");
+    try{const perm=await Notification.requestPermission();if(perm!=="granted"){await meldR();msg(perm==="denied"?"":"Je gaf nog geen toestemming. Tik opnieuw op de knop en kies Toestaan.");return}
+      const reg=await navigator.serviceWorker.register("sw.js");await navigator.serviceWorker.ready;
+      const {key}=await pushCall("key",null,"GET");let sub=await reg.pushManager.getSubscription();
+      if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8key(key)});
+      const j=sub.toJSON();await pushCall("subscribe",{endpoint:j.endpoint,keys:j.keys,ua:devName()});
+      await meldR();msg("Meldingen staan aan. Je krijgt zo meteen een bevestiging.")}
+    catch(err){console.error(err);b.disabled=false;msg(MERR[err&&err.code]||"Aanzetten lukte niet. Probeer het opnieuw.")}return}
+  if(t.closest("#m-test")){const b=t.closest("#m-test");b.disabled=true;
+    try{const j=await pushCall("test");msg(j.sent?"Testmelding verstuurd. Zie je niets? Kijk of meldingen voor TriDagboek aanstaan in de instellingen van je toestel.":"Er kon geen melding verstuurd worden. Zet meldingen uit en weer aan.")}
+    catch(err){msg(MERR[err&&err.code]||"Dat lukte niet. Probeer het opnieuw.")}b.disabled=false;return}
+  if(t.closest("#m-off")){const b=t.closest("#m-off");b.disabled=true;
+    try{const sub=await meldSub();if(sub){await pushCall("unsubscribe",{endpoint:sub.endpoint}).catch(()=>{});await sub.unsubscribe()}await meldR();msg("Meldingen staan uit op dit toestel.")}
+    catch(err){b.disabled=false;msg("Uitzetten lukte niet. Probeer het opnieuw.")}return}});
+if(PUSH_OK()){navigator.serviceWorker.register("sw.js").catch(e=>console.warn("sw",e));
+  navigator.serviceWorker.addEventListener("message",e=>{const d=e.data||{};
+    if(d.type==="td-nav"&&d.url){try{location.hash=new URL(d.url).hash||"#vandaag"}catch(x){}}
+    if(d.type==="td-refresh"&&sb&&ME&&AUTHST==="klaar"){const f=document.activeElement;if(f&&/INPUT|TEXTAREA|SELECT/.test(f.tagName))return;softReload().catch(()=>{})}})}
 async function softReload(){if(svT)await flush();const keep={sel,sw0,wk0,cSel,cTab,ctab,chan};await loadAll();({sel,sw0,wk0}=keep);cSel=keep.cSel;cTab=keep.cTab;ctab=keep.ctab;chan=keep.chan;if(AUTHST==="klaar"){all();route()}}
 let LIVE=null;
 function live(){if(LIVE||!sb)return;LIVE=sb.channel("td-live")
@@ -1303,7 +1347,7 @@ function zonesR(){try{labUI()}catch(e){}const p=A().p,z=zones(p),na=+p.na||0,pro
   const Y=d=>P(d).toLocaleDateString("nl-BE",{day:"numeric",month:"short",year:"numeric"}),WHY=["Basis","Je darmen laten wennen","Verder wennen","Langere duurtrainingen","Wedstrijdblok","Lange ritten en koppeltrainingen","Wedstrijdniveau, als je maag het aankan"],WK=[0,7,11,15,26,35,52];
   let rows=[];if(!p.cop)rows=[[p.start,"",(+p.c0||60),"Vast niveau; opbouw staat uit bij Instellingen"]];else{for(let i=0;i<WK.length;i++){const r=Math.min(120,(+p.c0||60)+10*i),a=add(p.start,WK[i]*7),last=i===WK.length-1||r>=120,b=last?"":add(p.start,WK[i+1]*7-1);rows.push([a,b,r,WHY[i]]);if(last)break}}
   $("zcrate").innerHTML=rows.map(([a,b,r,w])=>'<tr class="'+(TODAY>=a&&(!b||TODAY<=b)?"now":"")+'">'+td("Periode",b?Y(a)+" – "+Y(b):"Vanaf "+Y(a))+td("Per uur",r+" g")+td("Waarom",w)+'</tr>').join("")}
-function all(){if(AUTHST!=="klaar")return;document.body.classList.toggle("conly",CO(A().p));who();goalsR();strip();hero();metricsR();peilR();weekR();anaR();feelR();plan();logList();linkR();gear();settings();coachSel();ledenR();zonesR();clubR();coachR()}
+function all(){if(AUTHST!=="klaar")return;document.body.classList.toggle("conly",CO(A().p));who();goalsR();strip();hero();metricsR();peilR();weekR();anaR();feelR();plan();logList();linkR();meldR();gear();settings();coachSel();ledenR();zonesR();clubR();coachR()}
 const VIEWS=["vandaag","plan","club","coach","logboek","zones","materiaal","instellingen"];
 function route(){const G={uit:"auth",nieuw:"auth",wacht:"wacht",laden:"laden",fout:"laden"}[AUTHST];["auth","wacht","laden"].forEach(k=>$("v-"+k).hidden=k!==G);
   if(G){VIEWS.forEach(k=>$("v-"+k).hidden=true);$("v-start").hidden=true;document.body.classList.add("onb");window.scrollTo(0,0);return}
