@@ -369,9 +369,9 @@ body.onb #nav,body.onb .gearbtn,body.onb .count{display:none}body.onb #sub{visib
 .vb{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease}.vc.open>.vb{grid-template-rows:1fr}
 .vbi{overflow:hidden;min-height:0}.vc.open .vbi{padding-bottom:14px}
 @media(prefers-reduced-motion:reduce){.vb,.vchev{transition:none}}
-.vhead{--acc:transparent;background:var(--harbour);color:#fff;padding:18px 18px 4px}.vhead::before{display:none}
+.vhead{--acc:transparent;background:var(--harbour);color:#fff;padding:18px 20px 18px}.vhead::before{display:none}.vgoals{padding:16px 20px 2px}
 .vname{font-size:24px;letter-spacing:-.01em}.vrace{display:flex;align-items:center;gap:9px;margin-top:6px;color:#ffb07a;font-weight:600;font-size:16px}.vrace i{width:12px;height:12px;border-radius:50%;background:var(--legati-or,#fe7115);box-shadow:0 0 0 3px rgba(254,113,21,.3);flex:none}
-.vhead .goals{background:transparent;padding:16px 0 14px;margin:0;border:0}
+.vhead .goals{background:transparent;padding:0 0 14px;margin:0;border:0;border-radius:0}.vgoals .goals h2{color:#fff;font-size:20px;font-weight:700}
 .vplan .wk{background:transparent;color:var(--ink);margin:12px -4px 4px;padding:0;border-radius:0}
 .vplan .wd{color:var(--ink)}.vplan .wd .wdn{color:var(--mute)}.vplan .wd.today{border-color:var(--line)}.vplan .wd.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.vplan .wd.on .wdn{color:var(--bg)}
 .vplan .wnav{color:var(--ink);border-color:var(--line)}.vplan .wok{color:var(--go)}.vplan .wk .sd.swim{background:var(--swim)}.vplan .wk .sd.rest{background:var(--rest)}.vplan .wk .sd.str{background:var(--str)}
@@ -389,7 +389,7 @@ body.onb #nav,body.onb .gearbtn,body.onb .count{display:none}body.onb #sub{visib
 .home{gap:0 22px}
 @media(min-width:900px){.home{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}}
 @media(max-width:899px){.col-a,.col-b{display:contents}.home{display:flex;flex-direction:column}#vPlan{order:1}#vHerst{order:2}#weeksum{order:3}#anaCard{order:4}#clubmini{order:5}}
-@media(max-width:599px){.vhead{margin:-22px calc(-1 * max(4vw,16px)) 14px;border-radius:0 0 24px 24px;padding:16px max(4vw,16px) 2px}.vc{padding:16px 14px 4px 18px;border-radius:20px}}
+@media(max-width:599px){#vHead{margin:-22px calc(-1 * max(4vw,16px)) 14px;border-radius:0 0 24px 24px;padding:16px max(4vw,16px) 18px}.vgoals{padding:14px 14px 0 16px}.vc{padding:16px 14px 4px 18px;border-radius:20px}}
 
 /* Legati */
 :root{--harbour:#103154;--legati-or:#fe7115;--legati-bl:#d1e6eb}
@@ -447,6 +447,8 @@ body.onb #nav,body.onb .gearbtn,body.onb .count{display:none}body.onb #sub{visib
   <article class="vc vhead" id="vHead">
     <h1 class="vname" id="vName"></h1>
     <p class="vrace" id="vRace" hidden><i aria-hidden="true"></i><span></span></p>
+  </article>
+  <article class="vc vhead vgoals" id="vGoals">
     <div class="goals" id="goals"></div>
   </article>
   <div class="home">
@@ -1511,7 +1513,7 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener("click",e=>{const x=e.target.closest&&e.target.closest("a[data-anday]");if(!x)return;VST.ana={o:true,d:TODAY};const b=document.querySelector('#v-vandaag .vt[data-vt=ana]');if(b)vSet(b,true)},true);
 function vSum(){const a=A();if(!a||!a.p||!$("vHead"))return;const p=a.p,h=new Date().getHours(),nm=String(p.naam||"").trim().split(/\s+/)[0];
   $("vName").textContent=(h<12?"Goeiemorgen":h<18?"Goeiemiddag":"Goeieavond")+(nm?", "+short(nm):"");
-  const up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((x,y)=>x.d<y.d?-1:1),nx=up[0],dd=nx?diff(TODAY,nx.d):0;$("vRace").hidden=!nx;if(nx)$("vRace").querySelector("span").textContent=(nx.n||"Wedstrijd")+" · "+(dd?"nog "+dd+(dd===1?" dag":" dagen"):"vandaag!");
+  const up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((x,y)=>x.d<y.d?-1:1),nx=up.find(r=>r.t==="A")||up[0],dd=nx?diff(TODAY,nx.d):0;$("vRace").hidden=!nx;if(nx)$("vRace").querySelector("span").textContent=(nx.n||"Wedstrijd")+" · "+(dd?"nog "+dd+(dd===1?" dag":" dagen"):"vandaag!");
   const x=session(p,sel);$("vPlan").style.setProperty("--acc",x&&x.k!=="rust"&&!x.empty?"var(--"+sk(x.sp)+")":"var(--rest)");
   const pb=$("vb-plan"),pe=!$("htarget").textContent.trim()&&!$("hz").innerHTML&&$("hfuel").hidden&&$("hadvice").hidden;document.querySelector('#vPlan .vt').hidden=pe;
   // herstel (altijd vandaag)
