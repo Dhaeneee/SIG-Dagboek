@@ -450,11 +450,14 @@ p.cmorn{display:block}
 #acbox li{padding:9px 12px;border-radius:10px;cursor:pointer;line-height:1.3}#acbox li b{display:block;font-size:15.5px;font-weight:600}#acbox li span{display:block;font-size:13.5px;color:var(--mute)}
 #acbox li:hover,#acbox li[aria-selected=true]{background:var(--soft)}
 #acbox .acsrc{font-size:11.5px;color:var(--mute);padding:4px 14px 7px;border-top:1px solid var(--line)}
+
+.bhome{display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:0;border-radius:12px}.bhome .brand{flex:0 1 auto}.top .count{margin-left:auto}
+@media(hover:hover) and (pointer:fine){body:not(.onb) .bhome{cursor:pointer}body:not(.onb) .bhome:hover .brand b{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}.bhome:focus-visible{outline:2px solid #ffb07a;outline-offset:4px}}
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <img class="blogo" src="logo-mark.png" alt="" width="38" height="38"><div class="brand"><b>Legati Tri Dagboek 2027</b><span id="sub"></span></div>
+  <div class="bhome" id="bhome"><img class="blogo" src="logo-mark.png" alt="" width="38" height="38"><div class="brand"><b>Legati Tri Dagboek 2027</b><span id="sub"></span></div></div>
   <div class="count"><i aria-hidden="true"></i><span id="count"></span></div>
   <a class="gearbtn" href="#instellingen" aria-label="Instellingen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
 </div></header>
@@ -1665,6 +1668,13 @@ document.addEventListener("keydown",e=>{const i=e.target;if(i!==AC.inp||!AC.list
   if(e.key==="ArrowDown"){e.preventDefault();AC.act=(AC.act+1)%AC.list.length;acMark()}else if(e.key==="ArrowUp"){e.preventDefault();AC.act=(AC.act-1+AC.list.length)%AC.list.length;acMark()}
   else if(e.key==="Enter"&&AC.act>=0){e.preventDefault();acPick(AC.act)}else if(e.key==="Escape"){e.preventDefault();acClose()}});
 window.addEventListener("resize",()=>{if(AC.inp&&!$("acbox").hidden)acPlace()});
+/* ---------- logo = naar Vandaag (enkel op de computer: muis en hover) ---------- */
+const PCM=matchMedia("(hover:hover) and (pointer:fine)");
+function homeR(){const h=$("bhome");if(!h)return;if(PCM.matches){h.setAttribute("role","link");h.tabIndex=0;h.setAttribute("aria-label","Naar Vandaag");h.title="Naar Vandaag"}else{h.removeAttribute("role");h.removeAttribute("tabindex");h.removeAttribute("aria-label");h.removeAttribute("title")}}
+function goHome(){if(document.body.classList.contains("onb"))return;sel=TODAY;sw0=mon(TODAY);strip();hero();metricsR();anaR();if(location.hash!=="#vandaag")location.hash="#vandaag";else window.scrollTo({top:0,behavior:"smooth"})}
+$("bhome").addEventListener("click",()=>{if(PCM.matches)goHome()});
+$("bhome").addEventListener("keydown",e=>{if(PCM.matches&&(e.key==="Enter"||e.key===" ")){e.preventDefault();goHome()}});
+(PCM.addEventListener?PCM.addEventListener("change",homeR):PCM.addListener(homeR));homeR();
 function all(){if(AUTHST!=="klaar")return;try{fotoR()}catch(e){}document.body.classList.toggle("conly",CO(A().p));who();goalsR();strip();hero();metricsR();peilR();weekR();anaR();feelR();plan();logList();linkR();meldR();gear();settings();coachSel();ledenR();zonesR();clubR();coachR()}
 const VIEWS=["vandaag","plan","club","coach","logboek","zones","materiaal","instellingen"];
 function route(){const G={uit:"auth",nieuw:"auth",wacht:"wacht",laden:"laden",fout:"laden"}[AUTHST];["auth","wacht","laden"].forEach(k=>$("v-"+k).hidden=k!==G);
