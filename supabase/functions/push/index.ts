@@ -67,6 +67,45 @@ async function deliver(rows: SubRow[], m: Msg) {
   }
   return sent;
 }
+// één melding naar veel leden (club): alle abonnementen in één keer ophalen
+async function toUsers(uids: string[], m: Msg) {
+  if (!uids.length) return 0;
+  const { data } = await db.from("push_subs").select("endpoint,p256dh,auth,fails").in("user_id", uids);
+  return deliver((data ?? []) as SubRow[], m);
+}
+// actieve leden, behalve wie het zelf deed, en enkel wie die soort meldingen niet uitzette (pushChat / pushAgenda)
+async function clubLeden(behalve: string, soort: "pushChat" | "pushAgenda") {
+  const { data: mem } = await db.from("profiles").select("id").eq("status", "actief");
+  const ids = (mem ?? []).map((r: { id: string }) => r.id).filter((id: string) => id !== behalve);
+  if (!ids.length) return [];
+  const { data: ath } = await db.from("athletes").select("id,data").in("id", ids);
+  const uit = new Set((ath ?? []).filter((a: any) => a?.data?.p?.[soort] === false).map((a: any) => a.id));
+  return ids.filter((id: string) => !uit.has(id));
+}
+const KANAAL: Record<string, string> = { algemeen: "Algemeen", zwemmen: "Zwemmen", fietsen: "Fietsen", lopen: "Lopen", wedstrijden: "Wedstrijden" };
+const dagLang = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+// deno-lint-ignore no-explicit-any
+export function eventMsg(e: any, auteur: string) {
+  const wanneer = dagLang(String(e.datum)) + (e.uur ? " om " + String(e.uur).replace(":", ".") + " uur" : "");
+  return { title: `Nieuw in de agenda: ${trunc(e.titel, 50)}`, body: trunc(`${first(auteur)} zette ${e.titel} op ${wanneer}${e.plaats ? ", " + e.plaats : ""}. Laat weten of je komt.`, 200) };
+}
+// deno-lint-ignore no-explicit-any
+export function pollMsg(p: any, auteur: string) {
+  const n = Array.isArray(p.opties) ? p.opties.length : 0;
+  return { title: `Nieuwe poll: ${trunc(p.titel, 50)}`, body: trunc(`${first(auteur)} vraagt welke datum past${n ? " (" + n + " datums)" : ""}. Stem bij Club, Agenda.`, 200) };
+}
+// wat er veranderde aan een activiteit, in gewone woorden
+// deno-lint-ignore no-explicit-any
+export function evupdMsg(nu: any, oud: any, door: string | null) {
+  const uur = (u: unknown) => (u ? String(u).replace(":", ".") + " uur" : "");
+  const delen: string[] = [];
+  if (String(nu.datum) !== String(oud?.datum ?? nu.datum) || String(nu.uur ?? "") !== String(oud?.uur ?? nu.uur ?? ""))
+    delen.push(`nu op ${dagLang(String(nu.datum))}${nu.uur ? " om " + uur(nu.uur) : ""} (was ${dagLang(String(oud?.datum ?? nu.datum))}${oud?.uur ? " om " + uur(oud.uur) : ""})`);
+  if (String(nu.plaats ?? "") !== String(oud?.plaats ?? nu.plaats ?? "")) delen.push(nu.plaats ? `nieuwe plaats: ${nu.plaats}` : "de plaats is weggehaald");
+  if (String(nu.titel) !== String(oud?.titel ?? nu.titel)) delen.push(`nieuwe naam: ${nu.titel}`);
+  if (!delen.length) return null;
+  return { title: `Aangepast: ${trunc(oud?.titel ?? nu.titel, 50)}`, body: trunc(`${door ? first(door) + " paste de activiteit aan: " : "De activiteit is aangepast: "}${delen.join(", ")}.`, 220) };
+}
 async function toUser(uid: string, m: Msg) {
   const { data } = await db.from("push_subs").select("endpoint,p256dh,auth,fails").eq("user_id", uid);
   return deliver((data ?? []) as SubRow[], m);
@@ -194,6 +233,38 @@ export async function onEvent(e: any) {
     const { data: co } = prof.coach_id ? await db.from("profiles").select("naam").eq("id", prof.coach_id).maybeSingle() : { data: null };
     const m = schemaMsg(wk, pl.cplan ?? {}, co?.naam ?? null);
     return { sent: await toUser(e.user_id, { ...m, url: "#plan", tag: `schema-${wk}` }) };
+  }
+  if ((e?.type === "event" || e?.type === "poll" || e?.type === "chat") && Number.isFinite(Number(e.id))) {
+    const tabel = e.type === "event" ? "events" : e.type === "poll" ? "polls" : "chat";
+    const { data: x } = await db.from(tabel).select("*").eq("id", Number(e.id)).maybeSingle();
+    if (!x) return { skip: "weg" };
+    if (Date.now() - Date.parse(x.created_at ?? x.ts ?? "") > 6 * 3600_000) return { skip: "oud" };
+    if (e.type === "chat" && x.sys) return { skip: "automatisch" };
+    const { data: au } = await db.from("profiles").select("naam,status").eq("id", x.auteur).maybeSingle();
+    if (au?.status !== "actief") return { skip: "geen lid" };
+    const naar = await clubLeden(x.auteur, e.type === "chat" ? "pushChat" : "pushAgenda");
+    const m = e.type === "event" ? { ...eventMsg(x, au.naam), url: "#agenda", tag: `ev-${x.id}` }
+      : e.type === "poll" ? { ...pollMsg(x, au.naam), url: "#agenda", tag: `poll-${x.id}` }
+      : { title: `${first(au.naam)} · ${KANAAL[x.kanaal] ?? "Club"}`, body: trunc(x.t, 160), url: "#club", tag: `chat-${x.kanaal}` };
+    return { sent: await toUsers(naar, m), leden: naar.length };
+  }
+  if (e?.type === "evupd" && Number.isFinite(Number(e.id))) {
+    const { data: x } = await db.from("events").select("*").eq("id", Number(e.id)).maybeSingle();
+    if (!x) return { skip: "weg" };
+    if (String(x.datum) < localDay()) return { skip: "voorbij" };
+    const { data: rs } = await db.from("rsvp").select("user_id").eq("event_id", x.id).eq("antw", "ja");
+    const naar = (rs ?? []).map((r: { user_id: string }) => r.user_id).filter((u: string) => u !== e.door);
+    const { data: wie } = typeof e.door === "string" ? await db.from("profiles").select("naam").eq("id", e.door).maybeSingle() : { data: null };
+    const m = evupdMsg(x, e.oud ?? {}, wie?.naam ?? null);
+    if (!m) return { skip: "niets veranderd" };
+    return { sent: await toUsers(naar, { ...m, url: "#agenda", tag: `ev-${x.id}` }), leden: naar.length };
+  }
+  if (e?.type === "evweg" && e.ev && /^\d{4}-\d\d-\d\d$/.test(String(e.ev.datum ?? ""))) {
+    if (String(e.ev.datum) < localDay()) return { skip: "voorbij" };
+    const naar = (Array.isArray(e.naar) ? e.naar : []).filter((u: unknown) => typeof u === "string" && u !== e.door) as string[];
+    const { data: wie } = typeof e.door === "string" ? await db.from("profiles").select("naam").eq("id", e.door).maybeSingle() : { data: null };
+    const wanneer = dagLang(String(e.ev.datum)) + (e.ev.uur ? " om " + String(e.ev.uur).replace(":", ".") + " uur" : "");
+    return { sent: await toUsers(naar, { title: `Afgelast: ${trunc(e.ev.titel, 50)}`, body: trunc(wie?.naam ? `${first(wie.naam)} haalde ${e.ev.titel} van ${wanneer} uit de agenda.` : `${e.ev.titel} van ${wanneer} is uit de agenda gehaald.`, 200), url: "#agenda", tag: "evweg" }), leden: naar.length };
   }
   return { skip: "onbekend" };
 }
