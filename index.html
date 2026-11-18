@@ -402,6 +402,28 @@ body.onb #nav,body.onb .gearbtn,body.onb .count{display:none}body.onb #sub{visib
 @media(max-width:520px){.brand b{white-space:normal;font-size:15px;line-height:1.15}.brand #sub{display:none}.blogo{width:34px;height:34px}}
 .glogo{display:block;width:132px;height:132px;border-radius:26px;margin:0 0 18px}
 .wd.today .wdd,.wd.on.today .wdd{color:var(--legati-or)}
+
+/* doelen onder elkaar op gsm */
+.tlv{display:none;list-style:none;margin:0;padding:2px 0 8px}
+.tlv li{position:relative;display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:0 10px;align-items:start;padding:0 0 14px}
+.tlv li:last-child{padding-bottom:4px}
+.tlv li:not(:last-child)::after{content:"";position:absolute;left:11.5px;top:18px;bottom:-4px;width:3px;border-radius:2px;background:rgba(255,255,255,.2)}
+.tlv li.done::after{background:var(--run)}
+.tvd{display:block;width:16px;height:16px;margin:2px auto 0;border-radius:50%;background:var(--harbour);border:3px solid #fff;position:relative;z-index:1;box-sizing:border-box}
+.tv.a .tvd{width:22px;height:22px;margin-top:-1px;background:var(--run);border-color:var(--run)}
+.tv.c .tvd{width:12px;height:12px;margin-top:4px}
+.tv.done .tvd{background:#7fe0aa;border-color:#7fe0aa}
+.tv b{display:block;font-size:16px;line-height:1.25}.tv span{display:block;font-size:13.5px;color:#a9c1d9;line-height:1.35;margin-top:1px}
+.tv em{font-style:normal;font-size:14px;font-weight:600;white-space:nowrap;padding-top:1px}.tv.done em{color:#7fe0aa}
+.tlv .tvnow{grid-template-columns:26px minmax(0,1fr);align-items:center;padding-bottom:12px}
+.tvnow i{display:block;width:16px;height:4px;border-radius:2px;background:#fff;margin:0 auto;position:relative;z-index:1;box-shadow:0 0 0 3px var(--harbour)}
+.tvnow span{font-size:13px;font-weight:600;color:#ffb07a}
+@media(max-width:599px){.goals .tlx{display:none}.goals .tlv{display:block}}
+/* coach: rustpols */
+.ccard .crp,.cmorn .crp{font-weight:600}.crp small{font-weight:400;color:var(--mute);font-size:12.5px}
+.crp.g{color:light-dark(#146b3f,#6fd69e)}.crp.o{color:light-dark(#a35f00,#f6b75a)}.crp.r{color:light-dark(#a82a20,#f2847a)}
+.cmorn{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;margin-top:8px;font-size:14.5px}.cmorn .cml{font-weight:700;color:var(--ink)}.cmorn .crp b{color:var(--ink);font-weight:600;margin-right:2px}
+p.cmorn{display:block}
 </style>
 </head>
 <body>
@@ -988,8 +1010,12 @@ S=blank();
 let wk0=mon(TODAY),sel=TODAY,sw0=mon(TODAY);
 const sk=sp=>sp==="zwemmen"?"swim":sp==="fietsen"?"bike":sp==="lopen"||sp==="triatlon"?"run":sp==="kracht"?"str":"rest";
 function who(){const p=A().p,up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((a,b)=>a.d<b.d?-1:1),nx=up.find(r=>r.t==="A")||up[0];
-  $("sub").textContent=short(p.naam);const nd=nx?diff(TODAY,nx.d):0;$("count").innerHTML=nx?'<span class="rn2">'+esc(nx.n||"Wedstrijd")+'</span><span class="cd">'+(nd?"nog "+nd+(nd===1?" dag":" dagen"):"vandaag!")+'</span>':'';document.querySelector(".count").hidden=!nx;
+  $("sub").textContent=short(p.naam);const nd=nx?diff(TODAY,nx.d):0;$("count").innerHTML=nx?'<span class="rn2">'+esc((nx.n||"Wedstrijd")+(nx.w?" "+nx.w:""))+'</span><span class="cd">'+(nd?"nog "+nd+(nd===1?" dag":" dagen"):"vandaag!")+'</span>':'';document.querySelector(".count").hidden=!nx;
   if(p.theme&&p.theme!=="auto")document.documentElement.dataset.theme=p.theme;else delete document.documentElement.dataset.theme}
+function tlv(M){const Y=d=>P(d).toLocaleDateString("nl-BE",{day:"numeric",month:"short",year:"numeric"}).replace(".","");let h='<ol class="tlv">',nu=false;
+  M.forEach(m=>{const dl=diff(TODAY,m.d),done=m.d<TODAY;if(!nu&&m.d>TODAY){nu=true;h+='<li class="tvnow"><i aria-hidden="true"></i><span>Vandaag</span></li>'}
+    h+='<li class="tv'+(m.t==="A"?" a":m.t==="C"?" c":"")+(done?" done":"")+'"><i class="tvd" aria-hidden="true"></i><div><b>'+esc(m.n||"Wedstrijd")+'</b><span>'+[m.w?esc(m.w):"",Y(m.d)].filter(Boolean).join(" · ")+'</span></div><em>'+(m.st?(done?"gestart":dl===0?"vandaag":"nog "+dl+" d"):done?"gedaan ✓":dl===0?"vandaag!":"nog "+dl+" d")+'</em></li>'});
+  return h+'</ol>'}
 function goalsR(){const p=A().p,Y=d=>P(d).toLocaleDateString("nl-BE",{day:"numeric",month:"short",year:"numeric"}).replace(".","");
   const rs=(p.races||[]).filter(r=>r.d&&(!p.start||r.d>=p.start)).sort((a,b)=>a.d<b.d?-1:1);
   const head='<div class="gh"><h2>Je doelen</h2><a href="#instellingen" data-goto="doelen">+ Doel toevoegen</a></div>';
@@ -997,7 +1023,7 @@ function goalsR(){const p=A().p,Y=d=>P(d).toLocaleDateString("nl-BE",{day:"numer
   const M=[{st:1,n:"Start",w:"",d:p.start||TODAY,t:"S"}].concat(rs),n=M.length,cx=i=>(i+.5)/n*100;
   let x=cx(0);if(TODAY>=M[n-1].d)x=cx(n-1);else for(let i=0;i<n-1;i++)if(TODAY>=M[i].d&&TODAY<M[i+1].d){x=cx(i)+(cx(i+1)-cx(i))*diff(M[i].d,TODAY)/Math.max(1,diff(M[i].d,M[i+1].d));break}
   $("goals").innerHTML=head+'<div class="tlx"><div class="tl" style="--n:'+n+'"><span class="tr" style="left:'+cx(0)+'%;right:'+(100-cx(n-1))+'%"></span><span class="tf" style="left:'+cx(0)+'%;width:'+(x-cx(0))+'%"></span><span class="tnow" style="left:'+x+'%" title="Vandaag"></span>'+
-    M.map(m=>{const dl=diff(TODAY,m.d),done=m.d<TODAY;return'<div class="tm'+(m.t==="A"?" a":m.t==="C"?" c":"")+(done?" done":"")+'"><b>'+esc(m.n||"Wedstrijd")+'</b>'+(m.w?'<span>'+esc(m.w)+'</span>':'')+'<span>'+Y(m.d)+'</span><em>'+(m.st?(done?"gestart":dl===0?"vandaag":"nog "+dl+" d"):done?"gedaan ✓":dl===0?"vandaag!":"nog "+dl+" d")+'</em></div>'}).join("")+'</div></div>';
+    M.map(m=>{const dl=diff(TODAY,m.d),done=m.d<TODAY;return'<div class="tm'+(m.t==="A"?" a":m.t==="C"?" c":"")+(done?" done":"")+'"><b>'+esc(m.n||"Wedstrijd")+'</b>'+(m.w?'<span>'+esc(m.w)+'</span>':'')+'<span>'+Y(m.d)+'</span><em>'+(m.st?(done?"gestart":dl===0?"vandaag":"nog "+dl+" d"):done?"gedaan ✓":dl===0?"vandaag!":"nog "+dl+" d")+'</em></div>'}).join("")+'</div></div>'+tlv(M);
   const t=$("goals").querySelector(".tlx");if(t&&t.scrollWidth>t.clientWidth){t.scrollLeft=Math.max(0,t.scrollWidth*x/100-t.clientWidth/2);const f=()=>t.classList.toggle("more",t.scrollLeft+t.clientWidth<t.scrollWidth-4);f();t.addEventListener("scroll",f,{passive:true})}}
 function strip(){const p=A().p,a=A(),ds=[0,1,2,3,4,5,6].map(i=>add(sw0,i));
   $("wlab2").textContent=(p.start&&sw0>=mon(p.start)?"Week "+(Math.floor(diff(mon(p.start),sw0)/7)+1)+" · ":"")+rangeL(sw0,ds[6]);
@@ -1290,12 +1316,16 @@ function coachR(){const isC=A().p.rol==="coach";$("navcoach").hidden=!isC;$("nav
   const L=cAth();if(cSel&&!cFind(cSel))cSel=null;$("cList").hidden=!!cSel;$("cDetail").hidden=!cSel;
   if(!cSel){{const n=L.filter(x=>!x.self).length;$("cMeta").textContent=n===1?"1 sporter":n+" sporters"}$("cCards").innerHTML=L.map(cCard).join("")||'<p class="note">Nog geen sporters gekoppeld. Een sporter kiest jou als coach bij het instellen, of de beheerder koppelt hem bij Leden.</p>';return}
   cDetail(cFind(cSel))}
+function cRp(t){const g=GM(t.obj,TODAY);if(!g||g.rp==null)return t.p.gl?'<span class="note">Rustpols: nog niet binnen</span>':'';const r=rate("rp",g.rp,t.obj,TODAY);return'<span class="crp '+r[0]+'">Rustpols '+g.rp+' bpm'+(r[0]!=="g"?' · '+r[1].toLowerCase():'')+' <small>('+r[2]+')</small></span>'}
+function cMorning(t){const g=GM(t.obj,TODAY);if(!g)return t.p.gl?'<p class="note cmorn">Vanochtend: nog niets binnen uit Garmin.</p>':'';
+  const it=[["Rustpols",g.rp,"rp",v=>v+" bpm"],["HRV",g.hrv,"hrv",v=>v+" ms"],["Slaap",g.slaap,"slaap",v=>fu(v)],["Body Battery",g.bb,"bb",v=>String(v)]].filter(x=>x[1]!=null);
+  return'<div class="cmorn"><span class="cml">Vanochtend</span>'+it.map(([l,v,k2,f])=>{const r=rate(k2,v,t.obj,TODAY);return'<span class="crp '+r[0]+'"><b>'+l+'</b> '+esc(f(v))+(r[2]?' <small>'+esc(r[2])+'</small>':'')+'</span>'}).join("")+'</div>'}
 function cCard(t){const p=t.p,w0=mon(TODAY),ds=[0,1,2,3,4,5,6].map(i=>add(w0,i)),pl=ds.filter(d=>{const c=p.cplan&&p.cplan[d];return c&&c.k!=="rust"}).length,dn=t.log.filter(l=>l.datum>=w0&&l.datum<=TODAY).length;
   const j=judge(p,mState(t.obj,TODAY)),ll=[...t.log].filter(l=>l.datum<=TODAY).sort((a,b)=>a.datum<b.datum?1:-1)[0],an=ll?analyse(p,ll):null,un=(p.cmsg||[]).filter(m=>m.by==="s"&&m.ts>(p.cread||0)).length,up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((a,b)=>a.d<b.d?-1:1),g=up.find(r=>r.t==="A")||up[0];
   return'<button type="button" class="ccard" data-cid="'+t.id+'"><span class="ct">'+av(t.self?S.act:t.id)+'<b>'+esc(short(t.naam))+'</b>'+(un?'<span class="cbadge" aria-label="'+un+' nieuwe berichten">'+un+'</span>':'')+'</span>'+(g?'<span class="note" style="display:block;margin-top:4px">'+esc((g.n||"Wedstrijd")+(g.w?" "+g.w:""))+', nog '+diff(TODAY,g.d)+' dagen</span>':'')+
-    '<span class="cl"><span>'+(pl?'Deze week '+dn+' van '+pl+' gedaan':dn?'Deze week '+dn+(dn>1?' trainingen':' training')+' gedaan':'Deze week nog niets gedaan')+'</span><span><i class="cdot '+j.kleur+'"></i>Ochtendcheck '+j.kleur+'</span>'+(an?'<span class="tag '+tagC(an.o)+'">laatste: '+esc(an.tag)+'</span>':'')+(pl===0?'<span style="color:var(--stop);font-weight:600">Nog geen schema deze week</span>':'')+'</span></button>'}
+    '<span class="cl"><span>'+(pl?'Deze week '+dn+' van '+pl+' gedaan':dn?'Deze week '+dn+(dn>1?' trainingen':' training')+' gedaan':'Deze week nog niets gedaan')+'</span><span><i class="cdot '+j.kleur+'"></i>Ochtendcheck '+j.kleur+'</span>'+cRp(t)+(an?'<span class="tag '+tagC(an.o)+'">laatste: '+esc(an.tag)+'</span>':'')+(pl===0?'<span style="color:var(--stop);font-weight:600">Nog geen schema deze week</span>':'')+'</span></button>'}
 function cDetail(t){const p=t.p,Z=zones(p),up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((a,b)=>a.d<b.d?-1:1),g=up.find(r=>r.t==="A")||up[0];if(t.self&&cTab==="msg")cTab="schema";
-  $("cHead").innerHTML=av(t.self?S.act:t.id)+'<div><h2>'+esc(short(t.naam))+'</h2><p class="note">'+(g?esc("Doel: "+(g.n||"wedstrijd")+(g.w?" "+g.w:"")+", nog "+diff(TODAY,g.d)+" dagen. "):"")+'Lopen: vetdrempel '+p.lt1+' bpm ('+mmss(Z.p1)+'/km), omslagpunt '+p.lt2+' bpm ('+mmss(Z.p2)+'/km). Fietsen: FTP '+p.ftp+' W. Zwemmen: CSS '+esc(p.css)+'. '+esc(wgText(p))+'</p></div>';
+  $("cHead").innerHTML=av(t.self?S.act:t.id)+'<div><h2>'+esc(short(t.naam))+'</h2><p class="note">'+(g?esc("Doel: "+(g.n||"wedstrijd")+(g.w?" "+g.w:"")+", nog "+diff(TODAY,g.d)+" dagen. "):"")+'Lopen: vetdrempel '+p.lt1+' bpm ('+mmss(Z.p1)+'/km), omslagpunt '+p.lt2+' bpm ('+mmss(Z.p2)+'/km). Fietsen: FTP '+p.ftp+' W. Zwemmen: CSS '+esc(p.css)+'. '+esc(wgText(p))+'</p>'+cMorning(t)+'</div>';
   document.querySelectorAll("[data-ct]").forEach(b=>b.setAttribute("aria-selected",b.dataset.ct===cTab));$("ctMsgTab").hidden=!!t.self;["schema","train","msg"].forEach(k=>$("cd-"+k).hidden=k!==cTab);
   if(cTab==="schema")cSchema(t);else if(cTab==="train")cTrain(t);else cMsgs(t)}
 function cSchema(t){const p=t.p,ds=[0,1,2,3,4,5,6].map(i=>add(cW0,i)),wi=p.start?Math.floor(diff(mon(p.start),cW0)/7)+1:0;
@@ -1513,7 +1543,7 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener("click",e=>{const x=e.target.closest&&e.target.closest("a[data-anday]");if(!x)return;VST.ana={o:true,d:TODAY};const b=document.querySelector('#v-vandaag .vt[data-vt=ana]');if(b)vSet(b,true)},true);
 function vSum(){const a=A();if(!a||!a.p||!$("vHead"))return;const p=a.p,h=new Date().getHours(),nm=String(p.naam||"").trim().split(/\s+/)[0];
   $("vName").textContent=(h<12?"Goeiemorgen":h<18?"Goeiemiddag":"Goeieavond")+(nm?", "+short(nm):"");
-  const up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((x,y)=>x.d<y.d?-1:1),nx=up.find(r=>r.t==="A")||up[0],dd=nx?diff(TODAY,nx.d):0;$("vRace").hidden=!nx;if(nx)$("vRace").querySelector("span").textContent=(nx.n||"Wedstrijd")+" · "+(dd?"nog "+dd+(dd===1?" dag":" dagen"):"vandaag!");
+  const up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((x,y)=>x.d<y.d?-1:1),nx=up.find(r=>r.t==="A")||up[0],dd=nx?diff(TODAY,nx.d):0;$("vRace").hidden=!nx;if(nx)$("vRace").querySelector("span").textContent=(nx.n||"Wedstrijd")+(nx.w?" "+nx.w:"")+" · "+(dd?"nog "+dd+(dd===1?" dag":" dagen"):"vandaag!");
   const x=session(p,sel);$("vPlan").style.setProperty("--acc",x&&x.k!=="rust"&&!x.empty?"var(--"+sk(x.sp)+")":"var(--rest)");
   const pb=$("vb-plan"),pe=!$("htarget").textContent.trim()&&!$("hz").innerHTML&&$("hfuel").hidden&&$("hadvice").hidden;document.querySelector('#vPlan .vt').hidden=pe;
   // herstel (altijd vandaag)
