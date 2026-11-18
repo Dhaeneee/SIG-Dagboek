@@ -1,4 +1,4 @@
-// TriDagboek – Garmin Connect-koppeling (Garmin Connect Developer Program, OAuth 2.0 met PKCE)
+// Legati Tri Dagboek – Garmin Connect-koppeling (Garmin Connect Developer Program, OAuth 2.0 met PKCE)
 //   POST /garmin/start       (lid ingelogd)  -> { url } naar de toestemmingspagina van Garmin
 //   GET  /garmin/callback    (Garmin)        -> wisselt de code voor tokens, terug naar de website
 //   POST /garmin/disconnect  (lid ingelogd)  -> verbreekt de koppeling bij Garmin en bij ons
@@ -10,7 +10,7 @@
 // Deploy zonder JWT-controle (Garmin stuurt geen Supabase-token); leden worden hier zelf gecontroleerd.
 // Geheimen: GARMIN_CLIENT_ID, GARMIN_CLIENT_SECRET, SITE_URL. Er wordt nooit een gps-locatie bewaard.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { exchangeKey, KeyError, syncUser, type PRow } from "./personal.ts";
+import { exchangeKey, KeyError, localDay, localHour, syncUser, type PRow } from "./personal.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 // Supabase-sleutels: eerst de nieuwe (sb_secret / sb_publishable), anders de oude JWT-sleutels.
@@ -142,6 +142,8 @@ async function store(uid: string, key: string, kind: string, s: any) {
   }
   const ref = String(s.summaryId ?? s.calendarDate ?? crypto.randomUUID());
   await db.from("garmin_data").upsert({ user_id: uid, kind, ref, day: dayOf(s), data, received_at });
+  if (kind === "sleep" && dayOf(s) === localDay() && localHour() >= 5 && localHour() < 12)
+    await db.from("push_ochtend").upsert({ user_id: uid, dag: dayOf(s) }, { onConflict: "user_id,dag", ignoreDuplicates: true });
 }
 
 // deno-lint-ignore no-explicit-any

@@ -1,10 +1,12 @@
-// TriDagboek – persoonlijke Garmin-sleutel (Garmin Connect Personal API)
+// Legati Tri Dagboek – persoonlijke Garmin-sleutel (Garmin Connect Personal API)
 // Elk lid kan zijn eigen sleutel invullen. De server wisselt die om voor een toegangstoken (24 uur geldig)
 // en haalt enkel gegevens van dat lid op: trainingen (met het .fit-bestand), slaap, HRV, rustpols en Body Battery.
 // De gegevens worden in hetzelfde formaat bewaard als de push-meldingen van het Developer Program,
 // zodat de website ze op dezelfde manier toont. Er wordt nooit een gps-locatie bewaard.
 // deno-lint-ignore-file no-explicit-any
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { sportOf } from "./sports.ts";
+export { fitSportOf, sportOf } from "./sports.ts";
 
 export const PBASE = "https://personal.connectapi.garmin.com";
 const TOKEN_PATH = "/personalapitoken-service/personal-api/personal-api-key/token";
@@ -26,6 +28,8 @@ const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86400_000);
 // Belgische kalenderdag (Garmin werkt met de lokale dag van het horloge)
 export const localDay = (d = new Date(), tz = "Europe/Brussels") =>
   new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+export const localHour = (d = new Date(), tz = "Europe/Brussels") =>
+  Number(new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", hourCycle: "h23" }).format(d));
 
 function jwtExp(tok: string): number | null {
   try {
@@ -75,14 +79,15 @@ export async function unzipFits(buf: ArrayBuffer): Promise<ArrayBuffer[]> {
 }
 
 type Msg = Record<number, number>;
-export function parseFit(buf: ArrayBuffer): { recs: Msg[]; laps: Msg[]; sess: Msg[] } {
+export function parseFit(buf: ArrayBuffer): { recs: Msg[]; laps: Msg[]; sess: Msg[]; lens: Msg[]; sports: { sport?: number; sub?: number; name?: string }[] } {
   const dv = new DataView(buf), u8 = new Uint8Array(buf);
   if (u8.length < 14) throw new Error("kort");
   const hs = u8[0];
   if (String.fromCharCode(u8[8], u8[9], u8[10], u8[11]) !== ".FIT") throw new Error("geen fit");
   const end = Math.min(u8.length, hs + dv.getUint32(4, true));
   const defs: Record<number, { g: number; le: boolean; fs: number[][]; len: number }> = {};
-  const recs: Msg[] = [], laps: Msg[] = [], sess: Msg[] = [], BS = [1, 1, 1, 2, 2, 4, 4, 1, 4, 8, 1, 2, 4, 1, 8, 8, 8];
+  const sports: { sport?: number; sub?: number; name?: string }[] = [];
+  const recs: Msg[] = [], laps: Msg[] = [], sess: Msg[] = [], lens: Msg[] = [], BS = [1, 1, 1, 2, 2, 4, 4, 1, 4, 8, 1, 2, 4, 1, 8, 8, 8];
   let q = hs, lastTs = 0;
   const rd = (o: number, size: number, bt: number, le: boolean): number | null => {
     const b = bt & 31; if (b > 16 || size !== BS[b]) return null;
@@ -100,13 +105,28 @@ export function parseFit(buf: ArrayBuffer): { recs: Msg[]; laps: Msg[]; sess: Ms
       default: return null;
     }
   };
-  const msg = (d: { le: boolean; fs: number[][] }, o: number) => {
+  const txt = (o: number, size: number) => { let e = o; while (e < o + size && u8[e] !== 0) e++; return new TextDecoder().decode(u8.subarray(o, e)).trim(); };
+  const msg = (d: { le: boolean; g?: number; fs: number[][] }, o: number) => {
+    if (d.g === 12) {
+      const sp: { sport?: number; sub?: number; name?: string } = {};
+      for (const [num, size, bt, off] of d.fs) {
+        if (o + off + size > end) break;
+        if (num === 3 && (bt & 31) === 7) sp.name = txt(o + off, size).slice(0, 40);
+        else if (num === 0 || num === 1) { const v = rd(o + off, size, bt, d.le); if (v != null) sp[num === 0 ? "sport" : "sub"] = v; }
+      }
+      sports.push(sp); return {} as Msg;
+    }
     const m: Msg = {};
     for (const [num, size, bt, off] of d.fs) { if (o + off + size > end) break; const v = rd(o + off, size, bt, d.le); if (v != null) m[num] = v; }
     return m;
   };
   // gps-velden (positie) worden nooit bewaard
-  const put = (g: number, m: Msg) => { delete m[0]; delete m[1]; if (g === 20) recs.push(m); else if (g === 19) laps.push(m); else if (g === 18) sess.push(m); };
+  const put = (g: number, m: Msg) => {
+    if (g === 20) { delete m[0]; delete m[1]; recs.push(m); }
+    else if (g === 19) { [3, 4, 5, 6].forEach(k => delete m[k]); laps.push(m); }
+    else if (g === 18) { [3, 4, 29, 30, 31, 32].forEach(k => delete m[k]); sess.push(m); }
+    else if (g === 101) lens.push(m);
+  };
   while (q < end) {
     const h = u8[q++];
     if (h & 128) {
@@ -125,48 +145,112 @@ export function parseFit(buf: ArrayBuffer): { recs: Msg[]; laps: Msg[]; sess: Ms
     const d = defs[lt]; if (!d) throw new Error("def");
     const m = msg(d, q); q += d.len; if (m[253] != null) lastTs = m[253]; put(d.g, m);
   }
-  return { recs, laps, sess };
+  return { recs, laps, sess, lens, sports };
 }
 
 const mean = (v: number[]) => (v.length ? v.reduce((a, b) => a + b, 0) / v.length : null);
 
-// .fit -> grafiekpunten (st), ronden (laps) en een samenvatting als aanvulling
-export function fitDetails(f: { recs: Msg[]; laps: Msg[]; sess: Msg[] }, bike: boolean, run: boolean) {
+// .fit -> grafiekpunten (st), ronden (laps), zwemblokken (sw) en een samenvatting als aanvulling
+// soort: "run" (tempo + cadans), "bike" (vermogen + snelheid), "swim" (lengtes en blokken), "other" (hartslag)
+export type Kind = "run" | "bike" | "swim" | "other";
+export const kindOf = (type: string): Kind =>
+  /SWIM/.test(type) ? "swim" : /RUN/.test(type) ? "run" : /CYCL|BIK|RIDE|SPIN/.test(type) && !/MOTOR/.test(type) ? "bike" : "other";
+const r1 = (v: number) => Math.round(v * 10) / 10;
+export function fitDetails(f: { recs: Msg[]; laps: Msg[]; sess: Msg[]; lens?: Msg[] }, kind: Kind) {
   const R = f.recs.filter(r => r[253] != null), s = f.sess[0] ?? {};
-  if (!R.length) return null;
-  const t0 = s[2] ?? R[0][253], dur = Math.max(1, (R[R.length - 1][253] - t0));
-  const bin = Math.max(30, Math.ceil(dur / 400 / 10) * 10), nb = Math.ceil((dur + 1) / bin);
-  const acc = Array.from({ length: nb }, () => ({ h: [] as number[], o: [] as number[], e: [] as number[] }));
-  for (const r of R) {
-    const a = acc[Math.min(nb - 1, Math.max(0, Math.floor((r[253] - t0) / bin)))];
-    if (r[3] > 30) a.h.push(r[3]);
-    const alt = r[78] != null ? r[78] / 5 - 500 : r[2] != null ? r[2] / 5 - 500 : null;
-    if (alt != null && alt > -450) a.e.push(alt);
-    if (bike) { if (r[7] != null) a.o.push(r[7]); }
-    else if (run) { const v = r[73] != null ? r[73] / 1000 : r[6] != null ? r[6] / 1000 : null; if (v != null) a.o.push(v); }
-  }
-  const t: number[] = [], H: (number | null)[] = [], O: (number | null)[] = [], E: (number | null)[] = [];
-  acc.forEach((a, i) => {
-    t.push(+((i * bin + bin / 2) / 60).toFixed(2));
-    const hh = mean(a.h), ee = mean(a.e), oo = mean(a.o);
-    H.push(hh == null ? null : Math.round(hh)); E.push(ee == null ? null : Math.round(ee));
-    O.push(bike ? (oo == null ? null : Math.round(oo)) : (oo != null && oo > 1 ? Math.round(1000 / oo) : null));
-  });
-  const laps = f.laps.filter(L => L[2] != null && L[2] >= t0 - 1).map(L => ({
-    a: +((L[2] - t0) / 60).toFixed(2), dur: (L[8] ?? L[7] ?? 0) / 1000, el: (L[7] ?? L[8] ?? 0) / 1000,
-    hr: L[15] ?? null, w: L[19] ?? null,
-  }));
-  const pw = R.map(r => r[7]).filter(v => v != null) as number[];
+  const t0 = s[2] ?? R[0]?.[253] ?? f.lens?.[0]?.[2] ?? f.laps[0]?.[2];
+  if (t0 == null) return null;
   const fill: Record<string, number> = {};
   if (s[16] != null) fill.averageHeartRateInBeatsPerMinute = s[16];
+  if (s[17] != null) fill.maxHeartRateInBeatsPerMinute = s[17];
   if (s[20] != null) fill.averagePowerInWatts = s[20];
   if (s[22] != null) fill.totalElevationGainInMeters = s[22];
   if (s[9] != null) fill.distanceInMeters = s[9] / 100;
   if (s[8] != null) fill.durationInSeconds = Math.round(s[8] / 1000);
   if (s[2] != null) fill.startTimeInSeconds = s[2] + FITEPOCH;
+  const vmax = s[125] ?? s[15], vavg = s[124] ?? s[14];
+  if (vmax != null && kind !== "swim") fill.maxSpeedInMetersPerSecond = Math.round(vmax / 10) / 100;
+  if (vavg != null) fill.averageSpeedInMetersPerSecond = Math.round(vavg) / 1000;
+  if (s[18] != null && kind === "run") fill.averageRunCadenceInStepsPerMinute = Math.round((s[18] + (s[41] ?? 0) / 128) * 2);
+  if (s[18] != null && kind === "bike") fill.averageBikeCadenceInRoundsPerMinute = s[18];
+
+  let st = null as null | Record<string, (number | null)[] | null>;
+  if (R.length > 5) {
+    const dur = Math.max(1, R[R.length - 1][253] - t0);
+    const bin = Math.max(30, Math.ceil(dur / 400 / 10) * 10), nb = Math.ceil((dur + 1) / bin);
+    const acc = Array.from({ length: nb }, () => ({ h: [] as number[], o: [] as number[], e: [] as number[], c: [] as number[], v: [] as number[] }));
+    let vTop = 0;
+    for (const r of R) {
+      const a = acc[Math.min(nb - 1, Math.max(0, Math.floor((r[253] - t0) / bin)))];
+      if (r[3] > 30) a.h.push(r[3]);
+      const alt = r[78] != null ? r[78] / 5 - 500 : r[2] != null ? r[2] / 5 - 500 : null;
+      if (alt != null && alt > -450 && kind !== "swim") a.e.push(alt);
+      const v = r[73] != null ? r[73] / 1000 : r[6] != null ? r[6] / 1000 : null;
+      if (kind === "bike") {
+        if (r[7] != null) a.o.push(r[7]);
+        if (v != null && v < 30) { a.v.push(v * 3.6); if (v > vTop) vTop = v; }
+        if (r[4] != null && r[4] > 0) a.c.push(r[4]);
+      } else if (kind === "run") {
+        if (v != null) a.o.push(v);
+        if (r[4] != null) { const spm = (r[4] + (r[53] ?? 0) / 128) * 2; if (spm >= 120 && spm <= 240) a.c.push(spm); }
+      } else if (kind === "swim") { if (v != null && v > .3) a.o.push(v); }
+    }
+    const t: number[] = [], H: (number | null)[] = [], O: (number | null)[] = [], E: (number | null)[] = [], C: (number | null)[] = [], V: (number | null)[] = [];
+    acc.forEach((a, i) => {
+      t.push(+((i * bin + bin / 2) / 60).toFixed(2));
+      const hh = mean(a.h), ee = mean(a.e), oo = mean(a.o), cc = mean(a.c), vv = mean(a.v);
+      H.push(hh == null ? null : Math.round(hh)); E.push(ee == null ? null : Math.round(ee));
+      C.push(cc == null ? null : Math.round(cc)); V.push(vv == null ? null : r1(vv));
+      O.push(kind === "bike" ? (oo == null ? null : Math.round(oo)) : kind === "swim" ? (oo != null ? Math.round(100 / oo) : null) : (oo != null && oo > 1 ? Math.round(1000 / oo) : null));
+    });
+    const has = (a: (number | null)[]) => a.some(v => v != null);
+    st = { t, hr: has(H) ? H : null, o: has(O) ? O : null, el: has(E) ? E : null, cad: has(C) ? C : null, v: has(V) ? V : null };
+    if (kind === "bike" && vTop > 0 && fill.maxSpeedInMetersPerSecond == null) fill.maxSpeedInMetersPerSecond = Math.round(vTop * 100) / 100;
+  }
+  const laps = kind === "swim" ? [] : f.laps.filter(L => L[2] != null && L[2] >= t0 - 1).map(L => ({
+    a: +((L[2] - t0) / 60).toFixed(2), dur: (L[8] ?? L[7] ?? 0) / 1000, el: (L[7] ?? L[8] ?? 0) / 1000,
+    hr: L[15] ?? null, w: L[19] ?? null,
+  }));
+  const pw = R.map(r => r[7]).filter(v => v != null) as number[];
+  const out: Record<string, unknown> = { st, laps, avgPower: kind === "bike" && pw.length ? Math.round(mean(pw)!) : null, fill };
+  if (kind === "swim") { const sw = swimData(f, t0, s); if (sw) out.sw = sw; }
+  return st || out.sw ? out : null;
+}
+
+// zwemmen: elke lengte (tijd, slagen, slag) en de blokken met de rust ertussen
+export function swimData(f: { laps: Msg[]; lens?: Msg[] }, t0: number, s: Msg) {
+  const L = (f.lens ?? []).map(x => {
+    const el = (x[3] ?? x[4] ?? 0) / 1000, st = x[2] ?? (x[253] != null ? x[253] - el : null);
+    return { st, el, act: x[12] == null ? (x[5] ?? 1) > 0 || el > 0 : x[12] === 1, str: x[5] ?? null, k: x[7] ?? null };
+  }).filter(x => x.st != null && x.el > 0).sort((a, b) => a.st! - b.st!);
+  const laps = f.laps.filter(x => x[2] != null).sort((a, b) => a[2] - b[2]);
+  let pool = s[44] != null ? s[44] / 100 : null;
+  if (!pool) { const l = laps.find(x => (x[9] ?? 0) > 0 && (x[40] ?? x[32] ?? 0) > 0); if (l) pool = Math.round(l[9] / 100 / (l[40] ?? l[32])); }
+  if (!pool || pool < 10 || pool > 100) pool = L.length ? 25 : null;
+  const sets: Record<string, number | null>[] = [];
+  const lapSets = laps.filter(x => (x[8] ?? x[7]) != null);
+  if (lapSets.some(x => (x[9] ?? 0) > 0) && lapSets.length > 1) {
+    for (const x of lapSets) {
+      const a = +((x[2] - t0) / 60).toFixed(2), dur = Math.round((x[8] ?? x[7]) / 100) / 10, m = (x[9] ?? 0) / 100;
+      if (m > 0) sets.push({ a, dur, m: Math.round(m), hr: x[15] ?? null, k: x[38] ?? null, str: x[10] ?? null });
+      else if (dur >= 3) sets.push({ a, dur, r: 1 });
+    }
+  } else if (L.length && pool) {
+    let cur: { a: number; dur: number; m: number; n: number; str: number; k: number | null } | null = null;
+    for (const x of L) {
+      const a = +((x.st! - t0) / 60).toFixed(2);
+      if (x.act) {
+        if (!cur) { cur = { a, dur: 0, m: 0, n: 0, str: 0, k: x.k }; sets.push(cur as unknown as Record<string, number | null>); }
+        cur.dur = r1(cur.dur + x.el); cur.m += pool; cur.n++; cur.str += x.str ?? 0; if (cur.k !== x.k) cur.k = 5;
+      } else { cur = null; if (x.el >= 3) sets.push({ a, dur: r1(x.el), r: 1 }); }
+    }
+    sets.forEach(x => { if (!x.r) { x.str = x.str || null; delete (x as Record<string, unknown>).n; } });
+  }
+  if (!L.length && !sets.length) return null;
   return {
-    st: { t, hr: H.some(v => v) ? H : null, o: O.some(v => v) ? O : null, el: E.some(v => v != null) ? E : null },
-    laps, avgPower: pw.length ? Math.round(mean(pw)!) : null, fill,
+    pool,
+    len: L.slice(0, 400).map(x => [+((x.st! - t0) / 60).toFixed(2), r1(x.el), x.act ? 1 : 0, x.str ?? 0, x.k ?? -1]),
+    sets: sets.slice(0, 120),
   };
 }
 
@@ -190,6 +274,10 @@ export function actSummary(a: any) {
     averageSpeedInMetersPerSecond: num(a?.averageSpeed) ?? undefined,
     totalElevationGainInMeters: num(a?.elevationGain) ?? undefined,
     averagePowerInWatts: num(a?.avgPower) ?? undefined,
+    maxSpeedInMetersPerSecond: num(a?.maxSpeed) ?? undefined,
+    averageRunCadenceInStepsPerMinute: num(a?.averageRunningCadenceInStepsPerMinute) != null ? Math.round(num(a.averageRunningCadenceInStepsPerMinute)!) : undefined,
+    averageBikeCadenceInRoundsPerMinute: num(a?.averageBikingCadenceInRevPerMinute) != null ? Math.round(num(a.averageBikingCadenceInRevPerMinute)!) : undefined,
+    activeLengths: num(a?.activeLengths) ?? undefined,
   };
   return Object.fromEntries(Object.entries(s).filter(([, v]) => v !== undefined && v !== null && v !== ""));
 }
@@ -239,8 +327,8 @@ export function bbRows(j: any): Record<string, { bbMax: number | null; bbLast: n
 export const vo2Row = (j: any) => dfind(j, ["vo2MaxPreciseValue", "vo2MaxValue"]);
 
 // ---------------- ophalen voor één lid ----------------
-const SPORT_FIT = /RUN|CYCL|BIK|RIDE|SPIN/;
-const SPORT_APP = /RUN|CYCL|BIK|RIDE|SPIN|SWIM|STRENGTH|FITNESS|CARDIO|HIIT|YOGA|PILATES/;   // wat het dagboek toont
+const SKIP = /MEDITATION|BREATHWORK|SLEEP|NAP/;   // geen training
+export const FV = 2;                             // versie van de .fit-verwerking (hoger = opnieuw ophalen)
 
 export async function syncUser(db: SupabaseClient, row: PRow, opts: { health?: boolean; now?: Date; f?: Fetch } = {}) {
   const f = opts.f ?? fetch, now = opts.now ?? new Date();
@@ -269,25 +357,26 @@ export async function syncUser(db: SupabaseClient, row: PRow, opts: { health?: b
     for (const a of acts) {
       const ref = String(a?.activityId ?? ""); if (!/^\d+$/.test(ref)) continue;
       const summary = actSummary(a);
-      if (!SPORT_APP.test(String(summary.activityType ?? ""))) continue;   // bv. wandelen: niet nodig
+      if (!summary.activityType || SKIP.test(String(summary.activityType)) || !sportOf(summary.activityType)) continue;
       const { data: old } = await db.from("garmin_data").select("data").eq("user_id", row.user_id).eq("kind", "activity").eq("ref", ref).maybeSingle();
       const od: any = old?.data ?? null;
       let data: any = { ...(od ?? {}), summary: { ...(od?.summary ?? {}), ...summary } };
       const type = String(summary.activityType ?? "");
-      if (SPORT_FIT.test(type) && !od?.st && !od?.fitTried && fits < MAX_FIT_PER_RUN) {
+      if ((od?.fv ?? 0) < FV && fits < MAX_FIT_PER_RUN) {
         fits++;
         try {
           const zip = await get(`/download-service/files/activity/${ref}`, "application/zip, application/x-zip-compressed, application/octet-stream") as ArrayBuffer | null;
           if (zip && zip.byteLength) {
             const bufs = await unzipFits(zip);
-            const det = bufs.length ? fitDetails(parseFit(bufs[0]), /CYCL|BIK|RIDE|SPIN/.test(type), /RUN/.test(type)) : null;
+            const det = bufs.length ? fitDetails(parseFit(bufs[0]), kindOf(type)) : null;
             if (det) {
-              const { fill, ...rest } = det;
+              const { fill, ...rest } = det as Record<string, unknown> & { fill: Record<string, number> };
               data = { ...data, ...rest, summary: { ...fill, ...data.summary } };
+              if (!rest.st) delete data.st;
             }
           }
         } catch (e) { if (e instanceof KeyError) throw e; console.error("fit", ref, String(e)); }
-        data.fitTried = true;
+        data.fv = FV; delete data.fitTried;
       }
       const changed = !od || JSON.stringify(od) !== JSON.stringify(data);
       if (!changed) continue;
@@ -297,9 +386,20 @@ export async function syncUser(db: SupabaseClient, row: PRow, opts: { health?: b
     }
 
     // gezondheid: vandaag (en gisteren bij de eerste keer op een nieuwe dag)
-    const due = opts.health || !row.last_health || now.getTime() - new Date(row.last_health).getTime() >= HEALTH_EVERY_MS;
+    // 's ochtends (5 tot 12 u) elk kwartier kijken of de slaap van afgelopen nacht al binnen is, voor de ochtendmelding
+    const today = localDay(now), hour = localHour(now), morning = hour >= 5 && hour < 12;
+    let haveSleepToday = false, sleepNow = false;
+    if (morning) {
+      const { data: sl0 } = await db.from("garmin_data").select("data").eq("user_id", row.user_id).eq("kind", "sleep").eq("ref", `p-${today}`).maybeSingle();
+      haveSleepToday = (sl0?.data as any)?.durationInSeconds != null;
+    }
+    let due = opts.health || !row.last_health || now.getTime() - new Date(row.last_health).getTime() >= HEALTH_EVERY_MS;
+    if (!due && morning && !haveSleepToday) {
+      const sl = await get(`/sleep-service/sleep/dailySleep?date=${today}`).catch(e => { if (e instanceof KeyError) throw e; return null; });
+      if (sl && sleepRow(sl).durationInSeconds != null) due = true;           // slaap is net binnen: alles ophalen
+    }
     if (due) {
-      const today = localDay(now), yest = localDay(addDays(now, -1));
+      const yest = localDay(addDays(now, -1));
       const newDay = !row.last_health || localDay(new Date(row.last_health)) !== today;
       const days = newDay ? [yest, today] : [today];
       const put = async (kind: string, day: string, data: Record<string, unknown>) => {
@@ -312,7 +412,7 @@ export async function syncUser(db: SupabaseClient, row: PRow, opts: { health?: b
           get(`/hrv-service/hrv/${day}`).catch(e => { if (e instanceof KeyError) throw e; return null; }),
           get(`/wellness-service/wellness/dailyHeartRate?date=${day}`).catch(e => { if (e instanceof KeyError) throw e; return null; }),
         ]);
-        if (sl) await put("sleep", day, sleepRow(sl));
+        if (sl) { const sr = sleepRow(sl); await put("sleep", day, sr); if (day === today && sr.durationInSeconds != null) sleepNow = true; }
         if (hv) await put("hrv", day, hrvRow(hv));
         if (hr) await put("daily", day, rhrRow(hr));
       }
@@ -325,6 +425,8 @@ export async function syncUser(db: SupabaseClient, row: PRow, opts: { health?: b
       }
       upd.last_health = now.toISOString();
     }
+    // één ochtendmelding per dag (de database stuurt ze via de functie push)
+    if (morning && (sleepNow || haveSleepToday)) await db.from("push_ochtend").upsert({ user_id: row.user_id, dag: today }, { onConflict: "user_id,dag", ignoreDuplicates: true });
     upd.last_ok = now.toISOString(); upd.last_error = null;
   } catch (e) {
     if (e instanceof KeyError) { upd.last_error = "sleutel"; upd.token = null; upd.token_exp = null; }

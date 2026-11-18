@@ -1,4 +1,4 @@
-// TriDagboek – pushmeldingen (web push) naar de app op het beginscherm
+// Legati Tri Dagboek – pushmeldingen (web push) naar de app op het beginscherm
 //   GET  /push/key          (iedereen)      -> publieke VAPID-sleutel (de server maakt ze zelf de eerste keer)
 //   POST /push/subscribe    (lid ingelogd)  -> dit toestel inschrijven en een bevestiging sturen
 //   POST /push/unsubscribe  (lid ingelogd)  -> dit toestel uitschrijven
@@ -7,6 +7,7 @@
 // Deploy zonder JWT-controle (de database stuurt geen gebruikerstoken); leden worden hier zelf gecontroleerd.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { newVapid, okEndpoint, sendPush, unb64u, type Sub, type Vapid } from "./webpush.ts";
+import { sportOf } from "./sports.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 function sbKey(): string {
@@ -77,13 +78,46 @@ const trunc = (t: unknown, n = 140) => { const s = String(t ?? "").replace(/\s+/
 const localDay = (d = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Brussels", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 // deno-lint-ignore no-explicit-any
 export function actLine(s: any): string | null {
-  const ty = String(s?.activityType ?? "");
-  const sport = /RUN/.test(ty) ? "Lopen" : /CYCL|BIK|RIDE|SPIN/.test(ty) ? "Fietsen" : /SWIM/.test(ty) ? "Zwemmen" : /STRENGTH|FITNESS|CARDIO|HIIT|YOGA|PILATES/.test(ty) ? "Kracht" : null;
-  if (!sport) return null;
-  const parts = [sport], m = Number(s.distanceInMeters ?? 0), sec = Number(s.durationInSeconds ?? 0);
-  if (m > 0 && sport !== "Kracht") parts.push(sport === "Zwemmen" ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`);
+  const so = sportOf(s?.activityType); if (!so) return null;
+  const [cat, name] = so, parts = [name], m = Number(s.distanceInMeters ?? 0), sec = Number(s.durationInSeconds ?? 0);
+  if (m >= 100 && cat !== "kracht") parts.push(cat === "zwemmen" ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`);
   if (sec > 0) { const min = Math.round(sec / 60); parts.push(min >= 60 ? `${Math.floor(min / 60)}u${String(min % 60).padStart(2, "0")}` : `${min} min`); }
   return parts.join(" · ");
+}
+
+// ochtendmelding: zelfde regels als de ochtendcheck in de app (judge), met de drempels uit Instellingen
+// deno-lint-ignore no-explicit-any
+export function morningMsg(p: any, rol: string, rows: any[], plan: any) {
+  const pick = (kind: string, f: (d: any) => unknown) => { for (const r of rows) if (r.kind === kind) { const v = Number(f(r.data ?? {})); if (r.data && f(r.data) != null && isFinite(v)) return v; } return null; };
+  const sec = pick("sleep", d => d.durationInSeconds);
+  if (sec == null) return null;
+  const score = pick("sleep", d => d.overallSleepScore?.value ?? d.sleepScores?.overall?.value);
+  const hrv = pick("hrv", d => d.lastNightAvg);
+  const rp = pick("daily", d => d.restingHeartRateInBeatsPerMinute);
+  const bb = pick("stress", d => d.bbMax) ?? pick("daily", d => d.bodyBatteryHighestValue ?? d.bodyBatteryMostRecentValue);
+  const nr = (v: unknown, def: number) => (v !== "" && v != null && isFinite(Number(v)) ? Number(v) : def);
+  const slm = nr(p?.slm, 6), hrvl = nr(p?.hrvl, 50), rpn = nr(p?.rp, 55), bbm = nr(p?.bbm, 40);
+  const s: string[] = [];
+  if (sec / 3600 < slm) s.push("kort geslapen");
+  if (hrv != null && hrv < hrvl) s.push("HRV onder je normaal");
+  if (rp != null && rp >= rpn + 5) s.push(`rustpols ${Math.round(rp - rpn)} slagen hoger dan normaal`);
+  if (bb != null && bb < bbm) s.push("Body Battery laag");
+  const kleur = s.length === 0 ? "groen" : s.length === 1 ? "oranje" : "rood", bol = s.length === 0 ? "🟢" : s.length === 1 ? "🟠" : "🔴";
+  const min = Math.round(sec / 60);
+  const vals = [`Slaap ${Math.floor(min / 60)}u${String(min % 60).padStart(2, "0")}` + (score != null ? ` (score ${Math.round(score)})` : ""),
+    hrv != null ? `HRV ${Math.round(hrv)}` : "", rp != null ? `rustpols ${Math.round(rp)}` : "", bb != null ? `Body Battery ${Math.round(bb)}` : ""].filter(Boolean).join(" · ") + ".";
+  const why = s.length ? ` Let op: ${s.join(", ")}.` : "";
+  const usesPlan = (rol === "gecoacht" && (p?.src || "coach") === "coach") || (rol === "coach" && p?.src === "eigen");
+  let today: string;
+  if (usesPlan && plan && plan.s) {
+    if (plan.k === "rust") today = " Vandaag: rust.";
+    else {
+      const km = plan.km ? (plan.sp === "zwemmen" ? `${Math.round(plan.km * 1000)} m` : `${String(Math.round(plan.km * 10) / 10).replace(".", ",")} km`) : "";
+      const lab = [plan.t || "", km].filter(Boolean).join(" · ");
+      today = kleur === "groen" ? ` Vandaag: ${plan.s}${lab ? ", " + lab : ""}.` : kleur === "oranje" ? ` Vandaag: ${plan.s}, maar korter en rustiger.` : " Vandaag: rust of heel rustig.";
+    }
+  } else today = kleur === "groen" ? " Tik om je training van vandaag te zien." : kleur === "oranje" ? " Vandaag korter en rustiger dan gepland." : " Vandaag: rust of heel rustig.";
+  return { title: `${bol} Ochtendcheck: ${kleur}`, body: (vals + why + today).slice(0, 240) };
 }
 
 // ---------- gebeurtenissen uit de database ----------
@@ -119,6 +153,21 @@ export async function onEvent(e: any) {
     let n = 0;
     for (const a of admins ?? []) n += await toUser(a.id, { title: "Nieuw lid wacht op goedkeuring", body: `${trunc(p.naam, 40) || "Iemand"} wil meedoen. Keur goed bij Instellingen.`, url: "#instellingen", tag: "lid" });
     return { sent: n };
+  }
+  if (e?.type === "ochtend" && typeof e.user_id === "string" && /^\d{4}-\d\d-\d\d$/.test(String(e.dag ?? ""))) {
+    const dag = String(e.dag);
+    const [{ data: ath }, { data: prof }, { data: rows }, { data: pl }] = await Promise.all([
+      db.from("athletes").select("data").eq("id", e.user_id).maybeSingle(),
+      db.from("profiles").select("rol,status").eq("id", e.user_id).maybeSingle(),
+      db.from("garmin_data").select("kind,data").eq("user_id", e.user_id).eq("day", dag),
+      db.from("plans").select("cplan").eq("athlete_id", e.user_id).maybeSingle(),
+    ]);
+    if (prof?.status !== "actief") return { skip: "geen lid" };
+    const p = ath?.data?.p ?? {};
+    if (p.pushOchtend === false) return { skip: "uitgezet" };
+    const m = morningMsg(p, String(prof.rol ?? ""), rows ?? [], pl?.cplan?.[dag] ?? null);
+    if (!m) return { skip: "geen slaap" };
+    return { sent: await toUser(e.user_id, { ...m, url: "#vandaag", tag: `ochtend-${dag}` }) };
   }
   return { skip: "onbekend" };
 }

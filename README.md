@@ -1,4 +1,4 @@
-# TriDagboek
+# Legati Tri Dagboek 2027
 
 Het trainingsdagboek van de club: een statische website (GitHub Pages) met een Supabase-database.
 

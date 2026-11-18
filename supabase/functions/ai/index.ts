@@ -1,4 +1,4 @@
-// TriDagboek AI-functie: testverslagen inlezen (foto of pdf) en een week aanpassen.
+// Legati Tri Dagboek AI-functie: testverslagen inlezen (foto of pdf) en een week aanpassen.
 // De Anthropic-sleutel staat als geheim ANTHROPIC_API_KEY in Supabase en komt nooit in de website.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 

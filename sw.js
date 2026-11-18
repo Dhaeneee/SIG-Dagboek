@@ -1,4 +1,4 @@
-// TriDagboek – service worker: enkel voor pushmeldingen (geen offline-cache, zodat je altijd de nieuwste versie krijgt)
+// Legati Tri Dagboek 2027 – service worker: enkel voor pushmeldingen (geen offline-cache, zodat je altijd de nieuwste versie krijgt)
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 
@@ -6,7 +6,7 @@ self.addEventListener("push", e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data ? e.data.text() : "" }; }
   e.waitUntil((async () => {
-    await self.registration.showNotification(d.title || "TriDagboek", {
+    await self.registration.showNotification(d.title || "Legati Tri Dagboek", {
       body: d.body || "", icon: "icon-192.png", badge: "badge-96.png", tag: d.tag || undefined,
       data: { url: d.url || "#vandaag" },
     });
