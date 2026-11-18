@@ -76,6 +76,18 @@ async function toUser(uid: string, m: Msg) {
 const first = (n: unknown) => (String(n ?? "").trim().split(/\s+/)[0] || "Een sporter").slice(0, 30);
 const trunc = (t: unknown, n = 140) => { const s = String(t ?? "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 const localDay = (d = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Brussels", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+const addDay = (d: string, n: number) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const monday = (d: string) => { const x = new Date(d + "T12:00:00Z"); return addDay(d, -((x.getUTCDay() + 6) % 7)); };
+const dagMaand = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString("nl-BE", { day: "numeric", month: "long", timeZone: "UTC" });
+// tekst van de melding als de coach een week zichtbaar zet
+// deno-lint-ignore no-explicit-any
+export function schemaMsg(week: string, cplan: any, coachNaam: string | null) {
+  const days = [0, 1, 2, 3, 4, 5, 6].map(i => addDay(week, i));
+  const n = days.filter(d => { const x = cplan?.[d]; return x && x.k !== "rust" && !x.empty; }).length;
+  const eind = days[6], van = new Date(week + "T12:00:00Z").getUTCMonth() === new Date(eind + "T12:00:00Z").getUTCMonth() ? String(Number(week.slice(8))) : dagMaand(week);
+  const wie = coachNaam ? first(coachNaam) : "Je coach";
+  return { title: "Je schema staat klaar", body: `${wie} zette je week van ${van} tot ${dagMaand(eind)} klaar: ${n} ${n === 1 ? "training" : "trainingen"}. Bekijk ze bij Plan.` };
+}
 // deno-lint-ignore no-explicit-any
 export function actLine(s: any): string | null {
   const so = sportOf(s?.activityType); if (!so) return null;
@@ -160,14 +172,28 @@ export async function onEvent(e: any) {
       db.from("athletes").select("data").eq("id", e.user_id).maybeSingle(),
       db.from("profiles").select("rol,status").eq("id", e.user_id).maybeSingle(),
       db.from("garmin_data").select("kind,data").eq("user_id", e.user_id).eq("day", dag),
-      db.from("plans").select("cplan").eq("athlete_id", e.user_id).maybeSingle(),
+      db.from("plans").select("cplan,cpub").eq("athlete_id", e.user_id).maybeSingle(),
     ]);
     if (prof?.status !== "actief") return { skip: "geen lid" };
     const p = ath?.data?.p ?? {};
     if (p.pushOchtend === false) return { skip: "uitgezet" };
-    const m = morningMsg(p, String(prof.rol ?? ""), rows ?? [], pl?.cplan?.[dag] ?? null);
+    const zichtbaar = String(prof.rol ?? "") === "coach" || !!pl?.cpub?.[monday(dag)];   // enkel weken die de coach vrijgaf
+    const m = morningMsg(p, String(prof.rol ?? ""), rows ?? [], zichtbaar ? pl?.cplan?.[dag] ?? null : null);
     if (!m) return { skip: "geen slaap" };
     return { sent: await toUser(e.user_id, { ...m, url: "#vandaag", tag: `ochtend-${dag}` }) };
+  }
+  if (e?.type === "schema" && typeof e.user_id === "string" && /^\d{4}-\d\d-\d\d$/.test(String(e.week ?? ""))) {
+    const wk = String(e.week);
+    const [{ data: pl }, { data: prof }] = await Promise.all([
+      db.from("plans").select("cplan,cpub").eq("athlete_id", e.user_id).maybeSingle(),
+      db.from("profiles").select("status,coach_id").eq("id", e.user_id).maybeSingle(),
+    ]);
+    if (prof?.status !== "actief") return { skip: "geen lid" };
+    if (!pl?.cpub?.[wk]) return { skip: "niet zichtbaar" };
+    if (wk < monday(addDay(localDay(), -7))) return { skip: "oud" };                  // geen meldingen voor weken die al voorbij zijn
+    const { data: co } = prof.coach_id ? await db.from("profiles").select("naam").eq("id", prof.coach_id).maybeSingle() : { data: null };
+    const m = schemaMsg(wk, pl.cplan ?? {}, co?.naam ?? null);
+    return { sent: await toUser(e.user_id, { ...m, url: "#plan", tag: `schema-${wk}` }) };
   }
   return { skip: "onbekend" };
 }
