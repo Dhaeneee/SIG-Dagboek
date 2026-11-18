@@ -443,6 +443,13 @@ p.cmorn{display:block}
 .pvote .pv2[aria-pressed=true]{background:var(--go);border-color:var(--go);color:#fff}.pvote .pv1[aria-pressed=true]{background:var(--easy);border-color:var(--easy);color:#10242b}.pvote .pv0[aria-pressed=true]{background:var(--stop);border-color:var(--stop);color:#fff}
 .pvote .pk{margin-left:auto}.pwho{margin-top:6px;font-size:13.5px}
 .prow{display:grid;grid-template-columns:1fr 110px 44px;gap:6px;margin-bottom:6px}.prow .px{min-height:44px;padding:0;font-size:20px}
+
+/* "Waar" aanvullen */
+#acbox{position:absolute;z-index:60;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(16,49,84,.18);overflow:hidden;max-width:calc(100vw - 16px)}
+#acbox[hidden]{display:none}#acbox ul{list-style:none;margin:0;padding:4px;max-height:300px;overflow-y:auto}
+#acbox li{padding:9px 12px;border-radius:10px;cursor:pointer;line-height:1.3}#acbox li b{display:block;font-size:15.5px;font-weight:600}#acbox li span{display:block;font-size:13.5px;color:var(--mute)}
+#acbox li:hover,#acbox li[aria-selected=true]{background:var(--soft)}
+#acbox .acsrc{font-size:11.5px;color:var(--mute);padding:4px 14px 7px;border-top:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -588,7 +595,7 @@ p.cmorn{display:block}
             <label>Soort<select id="e-s"><option value="fiets">Fietsen</option><option value="loop">Lopen</option><option value="zwem">Zwemmen</option><option value="club">Clubactiviteit</option></select></label>
             <label>Datum<input id="e-d" type="date" required></label>
             <label>Uur<input id="e-u" type="time" required value="09:00"></label>
-            <label>Waar<input id="e-p" maxlength="50" placeholder="bv. Clubhuis"></label>
+            <label>Waar<input id="e-p" maxlength="80" placeholder="bv. Clubhuis"></label>
             <label class="full">Info<input id="e-i" maxlength="140" placeholder="bv. ±80 km, rustig tempo"></label>
             <button type="submit" class="full">Zet in de clubagenda</button>
           </form>
@@ -603,7 +610,7 @@ p.cmorn{display:block}
           <form class="f" id="pf" style="margin-top:12px">
             <label class="full">Wat<input id="p-t" required maxlength="50" placeholder="bv. Kerstrit"></label>
             <label>Soort<select id="p-s"><option value="club">Clubactiviteit</option><option value="fiets">Fietsen</option><option value="loop">Lopen</option><option value="zwem">Zwemmen</option></select></label>
-            <label>Waar<input id="p-p" maxlength="50" placeholder="bv. Clubhuis"></label>
+            <label>Waar<input id="p-p" maxlength="80" placeholder="bv. Clubhuis"></label>
             <label class="full">Info<input id="p-i" maxlength="140" placeholder="bv. Etentje na de rit"></label>
             <div class="full"><p class="flab" style="margin:0 0 6px">Datums om uit te kiezen</p><div id="p-opts"></div><button type="button" class="ghost" id="p-add" style="margin-top:8px">+ Datum toevoegen</button></div>
             <button type="submit" class="full">Start de poll</button>
@@ -1044,7 +1051,7 @@ S=blank();
 let wk0=mon(TODAY),sel=TODAY,sw0=mon(TODAY);
 const sk=sp=>sp==="zwemmen"?"swim":sp==="fietsen"?"bike":sp==="lopen"||sp==="triatlon"?"run":sp==="kracht"?"str":"rest";
 function who(){const p=A().p,up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((a,b)=>a.d<b.d?-1:1),nx=up.find(r=>r.t==="A")||up[0];
-  $("sub").textContent=short(p.naam);const nd=nx?diff(TODAY,nx.d):0;$("count").innerHTML=nx?'<span class="rn2">'+esc((nx.n||"Wedstrijd")+(nx.w?" "+nx.w:""))+'</span><span class="cd">'+(nd?"nog "+nd+(nd===1?" dag":" dagen"):"vandaag!")+'</span>':'';document.querySelector(".count").hidden=!nx;
+  $("sub").textContent=short(p.naam);const nd=nx?diff(TODAY,nx.d):0;$("count").innerHTML=nx?'<span class="rn2">'+esc((nx.n||"Wedstrijd")+(nx.w?" "+wK(nx.w):""))+'</span><span class="cd">'+(nd?"nog "+nd+(nd===1?" dag":" dagen"):"vandaag!")+'</span>':'';document.querySelector(".count").hidden=!nx;
   if(p.theme&&p.theme!=="auto")document.documentElement.dataset.theme=p.theme;else delete document.documentElement.dataset.theme}
 function goalsR(){const p=A().p,Y=d=>P(d).toLocaleDateString("nl-BE",{day:"numeric",month:"short",year:"numeric"}).replace(".","");
   const rs=(p.races||[]).filter(r=>r.d&&(!p.start||r.d>=p.start)).sort((a,b)=>a.d<b.d?-1:1);
@@ -1056,7 +1063,7 @@ function goalsR(){const p=A().p,Y=d=>P(d).toLocaleDateString("nl-BE",{day:"numer
     else for(let i=0;i<n-1;i++)if(TODAY>=M[i].d&&TODAY<M[i+1].d){x=cx(i)+(cx(i+1)-cx(i))*diff(M[i].d,TODAY)/Math.max(1,diff(M[i].d,M[i+1].d));break}
     X[cls]=x;
     return'<div class="tlx '+cls+'"><div class="tl" style="--n:'+n+'"><span class="tr" style="left:'+x0+'%;right:'+(100-cx(n-1))+'%"></span><span class="tf" style="left:'+x0+'%;width:'+(x-x0)+'%"></span><span class="tnow" style="left:'+x+'%" title="Vandaag"></span>'+
-      M.map(m=>{const dl=diff(TODAY,m.d),done=m.d<TODAY;return'<div class="tm'+(m.t==="A"?" a":m.t==="C"?" c":"")+(done?" done":"")+'"><b>'+esc(m.n||"Wedstrijd")+'</b><span class="tmw">'+(m.w?esc(m.w):"&nbsp;")+'</span><span>'+Y(m.d)+'</span><em>'+(m.st?(done?"gestart":dl===0?"vandaag":"nog "+dl+" d"):done?"gedaan ✓":dl===0?"vandaag!":"nog "+dl+" d")+'</em></div>'}).join("")+'</div></div>'};
+      M.map(m=>{const dl=diff(TODAY,m.d),done=m.d<TODAY;return'<div class="tm'+(m.t==="A"?" a":m.t==="C"?" c":"")+(done?" done":"")+'"><b>'+esc(m.n||"Wedstrijd")+'</b><span class="tmw" title="'+esc(m.w||"")+'">'+(m.w?esc(wK(m.w)):"&nbsp;")+'</span><span>'+Y(m.d)+'</span><em>'+(m.st?(done?"gestart":dl===0?"vandaag":"nog "+dl+" d"):done?"gedaan ✓":dl===0?"vandaag!":"nog "+dl+" d")+'</em></div>'}).join("")+'</div></div>'};
   $("goals").innerHTML=head+tlh([S0].concat(rs),"tld",false)+tlh(rs,"tlm",true);
   $("goals").querySelectorAll(".tlx").forEach(t=>{if(t.scrollWidth>t.clientWidth){const x=X[t.classList.contains("tlm")?"tlm":"tld"];t.scrollLeft=Math.max(0,t.scrollWidth*x/100-t.clientWidth/2);const f=()=>t.classList.toggle("more",t.scrollLeft+t.clientWidth<t.scrollWidth-4);f();t.addEventListener("scroll",f,{passive:true})}})}
 function strip(){const p=A().p,a=A(),ds=[0,1,2,3,4,5,6].map(i=>add(sw0,i));
@@ -1068,6 +1075,7 @@ function verdict(p,l){const x=session(p,l.datum);if(l.sport==="lopen"&&l.hr&&x&&
   if(l.sport==="fietsen"&&l.w&&x&&x.k==="long")return l.w>p.ftp*.75?["hard","te hard","Gemiddeld "+l.w+" W, boven je duurzone."]:["goed","goed","Gemiddeld "+l.w+" W: mooi in je duurzone."];return["goed","gedaan",""]}
 const lmeta=l=>[kmOk(l)?(l.sport==="zwemmen"?Math.round(l.km*1000)+" m":String(l.km).replace(".",",")+" km"):"",l.min?dur(l.min):"",l.hr?l.hr+" bpm":"",l.w?l.w+" W":""].filter(Boolean).join(" · ");
 const MLONG=d=>P(d).toLocaleDateString("nl-BE",{month:"long"}),rangeL=(a,b)=>MLONG(a)===MLONG(b)?P(a).getDate()+"–"+P(b).getDate()+" "+MLONG(b):P(a).getDate()+" "+MLONG(a)+" – "+P(b).getDate()+" "+MLONG(b),cap=t=>String(t).replace(/^./,m=>m.toUpperCase());
+const wK=w=>String(w||"").split(",")[0].trim();
 const SPN={lopen:"Lopen",fietsen:"Fietsen",zwemmen:"Zwemmen",andere:"Andere sport",squash:"Squash",kracht:"Kracht"};
 const spN=l=>(l&&l.sn)||SPN[l&&l.sport]||"Training",kmOk=l=>!!l.km&&(["lopen","fietsen","zwemmen"].includes(l.sport)||l.sport==="andere"&&l.km>=1&&l.km/((l.min||1)/60)>=4);
 const STROKE=["vrije slag","rugslag","schoolslag","vlinderslag","oefening","gemengd","wisselslag"];
@@ -1356,10 +1364,10 @@ function cMorning(t){const g=GM(t.obj,TODAY);if(!g)return t.p.gl?'<p class="note
   return'<div class="cmorn"><span class="cml">Vanochtend</span>'+it.map(([l,v,k2,f])=>{const r=rate(k2,v,t.obj,TODAY);return'<span class="crp '+r[0]+'"><b>'+l+'</b> '+esc(f(v))+(r[2]?' <small>'+esc(r[2])+'</small>':'')+'</span>'}).join("")+'</div>'}
 function cCard(t){const p=t.p,w0=mon(TODAY),ds=[0,1,2,3,4,5,6].map(i=>add(w0,i)),pl=ds.filter(d=>{const c=p.cplan&&p.cplan[d];return c&&c.k!=="rust"}).length,dn=t.log.filter(l=>l.datum>=w0&&l.datum<=TODAY).length;
   const j=judge(p,mState(t.obj,TODAY)),ll=[...t.log].filter(l=>l.datum<=TODAY).sort((a,b)=>a.datum<b.datum?1:-1)[0],an=ll?analyse(p,ll):null,un=(p.cmsg||[]).filter(m=>m.by==="s"&&m.ts>(p.cread||0)).length,up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((a,b)=>a.d<b.d?-1:1),g=up.find(r=>r.t==="A")||up[0];
-  return'<button type="button" class="ccard" data-cid="'+t.id+'"><span class="ct">'+av(t.self?S.act:t.id)+'<b>'+esc(short(t.naam))+'</b>'+(un?'<span class="cbadge" aria-label="'+un+' nieuwe berichten">'+un+'</span>':'')+'</span>'+(g?'<span class="note" style="display:block;margin-top:4px">'+esc((g.n||"Wedstrijd")+(g.w?" "+g.w:""))+', nog '+diff(TODAY,g.d)+' dagen</span>':'')+
+  return'<button type="button" class="ccard" data-cid="'+t.id+'"><span class="ct">'+av(t.self?S.act:t.id)+'<b>'+esc(short(t.naam))+'</b>'+(un?'<span class="cbadge" aria-label="'+un+' nieuwe berichten">'+un+'</span>':'')+'</span>'+(g?'<span class="note" style="display:block;margin-top:4px">'+esc((g.n||"Wedstrijd")+(g.w?" "+wK(g.w):""))+', nog '+diff(TODAY,g.d)+' dagen</span>':'')+
     '<span class="cl"><span>'+(pl?'Deze week '+dn+' van '+pl+' gedaan':dn?'Deze week '+dn+(dn>1?' trainingen':' training')+' gedaan':'Deze week nog niets gedaan')+'</span><span><i class="cdot '+j.kleur+'"></i>Ochtendcheck '+j.kleur+'</span>'+cRp(t)+(an?'<span class="tag '+tagC(an.o)+'">laatste: '+esc(an.tag)+'</span>':'')+(pl===0?'<span style="color:var(--stop);font-weight:600">Nog geen schema deze week</span>':'')+'</span></button>'}
 function cDetail(t){const p=t.p,Z=zones(p),up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((a,b)=>a.d<b.d?-1:1),g=up.find(r=>r.t==="A")||up[0];if(t.self&&cTab==="msg")cTab="schema";
-  $("cHead").innerHTML=av(t.self?S.act:t.id)+'<div><h2>'+esc(short(t.naam))+'</h2><p class="note">'+(g?esc("Doel: "+(g.n||"wedstrijd")+(g.w?" "+g.w:"")+", nog "+diff(TODAY,g.d)+" dagen. "):"")+'Lopen: vetdrempel '+p.lt1+' bpm ('+mmss(Z.p1)+'/km), omslagpunt '+p.lt2+' bpm ('+mmss(Z.p2)+'/km). Fietsen: FTP '+p.ftp+' W. Zwemmen: CSS '+esc(p.css)+'. '+esc(wgText(p))+'</p>'+cMorning(t)+'</div>';
+  $("cHead").innerHTML=av(t.self?S.act:t.id)+'<div><h2>'+esc(short(t.naam))+'</h2><p class="note">'+(g?esc("Doel: "+(g.n||"wedstrijd")+(g.w?" "+wK(g.w):"")+", nog "+diff(TODAY,g.d)+" dagen. "):"")+'Lopen: vetdrempel '+p.lt1+' bpm ('+mmss(Z.p1)+'/km), omslagpunt '+p.lt2+' bpm ('+mmss(Z.p2)+'/km). Fietsen: FTP '+p.ftp+' W. Zwemmen: CSS '+esc(p.css)+'. '+esc(wgText(p))+'</p>'+cMorning(t)+'</div>';
   document.querySelectorAll("[data-ct]").forEach(b=>b.setAttribute("aria-selected",b.dataset.ct===cTab));$("ctMsgTab").hidden=!!t.self;["schema","train","msg"].forEach(k=>$("cd-"+k).hidden=k!==cTab);
   if(cTab==="schema")cSchema(t);else if(cTab==="train")cTrain(t);else cMsgs(t)}
 function cSchema(t){const p=t.p,ds=[0,1,2,3,4,5,6].map(i=>add(cW0,i)),wi=p.start?Math.floor(diff(mon(p.start),cW0)/7)+1:0;
@@ -1403,7 +1411,7 @@ function obR(){if(!OB)obReset();const st=obSteps(),k=st[OB.step],n=OB.rol?st.len
   else if(k==="week")h='<h2>Je trainingsweek</h2><p class="lead">Hoeveel tijd heb je, en wanneer? Daarmee maakt de website je schema.</p><div class="f"><label>Uren in een zware week<input id="ob-uren" type="number" min="2" max="25" step="0.5" value="'+esc(OB.uren)+'"></label><label>Ritme<select id="ob-blok"><option value="3:1"'+(OB.blok==="3:1"?" selected":"")+'>3 weken op, 1 rust</option><option value="2:1"'+(OB.blok==="2:1"?" selected":"")+'>2 weken op, 1 rust</option></select></label>'+
     SLOTS.map(([sk2,l])=>'<label>'+l+'<select id="ob-d-'+sk2+'">'+DOPT(OB.days[sk2],true)+'</select></label>').join("")+'</div><div class="ck" style="margin-top:12px"><label class="chk"><input type="checkbox" id="ob-zw"'+(OB.sports.zw?" checked":"")+'>Zwemmen</label><label class="chk"><input type="checkbox" id="ob-fi"'+(OB.sports.fi?" checked":"")+'>Fietsen</label><label class="chk"><input type="checkbox" id="ob-lo"'+(OB.sports.lo?" checked":"")+'>Lopen</label></div>'+
     '<label class="full" style="display:grid;gap:6px;margin-top:16px;font-weight:600">Wensen voor je schema (mag leeg)<textarea id="ob-wens" rows="3" maxlength="300" placeholder="bv. Op dinsdag zwem ik met de club, en mijn lange rit doe ik liefst op zondag.">'+esc(OB.wens)+'</textarea></label><p class="note">Je wensen staan klaar bij Plan, in het vak "Iets veranderen aan je week?". Met één klik past de AI je week aan.</p>';
-  else if(k==="doelen")h='<h2>Je doelen</h2><p class="lead">Naar welke wedstrijden werk je toe? Ze komen op je tijdslijn'+(OB.rol==="gecoacht"?' en je coach ziet ze.':', en je plan bouwt ernaartoe.')+'</p><div id="ob-races">'+OB.races.map((r,i)=>'<div class="obrace" data-i="'+i+'"><label>Naam<input class="ob-rn" maxlength="40" value="'+esc(r.n)+'" placeholder="bv. Halve marathon"></label><label>Waar<input class="ob-rw" maxlength="40" value="'+esc(r.w)+'" placeholder="bv. Roeselare"></label><label>Datum<input class="ob-rd" type="date" value="'+esc(r.d)+'"></label><label>Belang<select class="ob-rt"><option'+(r.t==="A"?" selected":"")+'>A</option><option'+(r.t==="B"?" selected":"")+'>B</option><option'+(r.t==="C"?" selected":"")+'>C</option></select></label><button type="button" class="x" data-obdel="'+i+'" aria-label="Verwijderen">×</button></div>').join("")+'</div><button type="button" class="ghost" id="ob-add" style="margin-top:10px">+ Nog een doel</button><p class="note" style="margin-top:8px">A = je hoofddoel, B = belangrijk, C = tussendoel. Nog geen doel? Laat het leeg.</p>';
+  else if(k==="doelen")h='<h2>Je doelen</h2><p class="lead">Naar welke wedstrijden werk je toe? Ze komen op je tijdslijn'+(OB.rol==="gecoacht"?' en je coach ziet ze.':', en je plan bouwt ernaartoe.')+'</p><div id="ob-races">'+OB.races.map((r,i)=>'<div class="obrace" data-i="'+i+'"><label>Naam<input class="ob-rn" maxlength="40" value="'+esc(r.n)+'" placeholder="bv. Halve marathon"></label><label>Waar<input class="ob-rw" maxlength="80" value="'+esc(r.w)+'" placeholder="bv. Roeselare"></label><label>Datum<input class="ob-rd" type="date" value="'+esc(r.d)+'"></label><label>Belang<select class="ob-rt"><option'+(r.t==="A"?" selected":"")+'>A</option><option'+(r.t==="B"?" selected":"")+'>B</option><option'+(r.t==="C"?" selected":"")+'>C</option></select></label><button type="button" class="x" data-obdel="'+i+'" aria-label="Verwijderen">×</button></div>').join("")+'</div><button type="button" class="ghost" id="ob-add" style="margin-top:10px">+ Nog een doel</button><p class="note" style="margin-top:8px">A = je hoofddoel, B = belangrijk, C = tussendoel. Nog geen doel? Laat het leeg.</p>';
   else if(k==="zones")h='<h2>Je zones</h2><p class="lead">Uit je inspanningstest of je Garmin. Leeg laten mag: dan starten we met veilige standaardwaarden.</p><div class="f">'+
     [["lt1","Vetdrempel lopen (bpm)","number"],["lt2","Omslagpunt lopen (bpm)","number"],["p1","Tempo vetdrempel (/km)","text"],["p2","Tempo omslagpunt (/km)","text"],["ftp","FTP fiets (W)","number"],["css","CSS zwemmen (/100 m)","text"],["na","Natrium in zweet (mg/L)","number"]].map(([key,l,t])=>'<label>'+l+'<input id="ob-z-'+key+'" type="'+t+'" value="'+esc(OB.z[key])+'"'+(t==="text"?' placeholder="5:30"':'')+'></label>').join("")+'</div><p class="note" style="margin-top:12px">Heb je een verslag van een inspanningstest of zweettest? Laad het na de start op bij Zones, dan wordt alles automatisch ingevuld.</p>';
   else if(k==="horloge"){const lk=OB.link;h='<h2>Welk horloge gebruik je?</h2><p class="lead">'+(CFG.garmin||CFG.garminKey?'Gebruik je Garmin, dan koppel je na het instellen bij Instellingen'+(CFG.garmin?' met één klik':' met je persoonlijke Garmin-sleutel; dat is twee minuten werk')+'. Daarna komen je ochtendcheck en je trainingen vanzelf binnen, met na elke training een analyse'+(OB.rol==="gecoacht"?' die je coach ook ziet':'')+'. Wahoo volgt later; tot dan laad je een .fit-bestand op bij Logboek.':'De koppeling met Garmin Connect en Wahoo staat klaar zodra Garmin en Wahoo de club-app goedkeuren. Tot dan laad je een training op als .fit-bestand bij Logboek, en krijg je meteen je analyse'+(OB.rol==="gecoacht"?' die je coach ook ziet':'')+'.')+'</p><div class="onbc" role="radiogroup" aria-label="Welk horloge gebruik je?">'+
@@ -1574,7 +1582,7 @@ function clubR(){$("cmeta").textContent=C().naam+" · "+people(true).length+" le
   if(ctab==="gesprekken"){chatR();if(!$("v-club").hidden)markRead(chan)}else if(ctab==="agenda")agendaR();else recordsR();
   badge();clubMini()}
 const DOPT=(v,none)=>(none?'<option value="">geen</option>':'')+DL.map((n,i)=>'<option value="'+i+'"'+(String(i)===String(v)?" selected":"")+'>'+n+'</option>').join("");
-function raceRows(rs){$("s-races").innerHTML=rs.map((r,i)=>'<div class="rrow" data-i="'+i+'"><label>Naam<input class="r-n" value="'+esc(r.n)+'" maxlength="40" placeholder="bv. Halve marathon"></label><label>Waar<input class="r-w" value="'+esc(r.w||"")+'" maxlength="40" placeholder="bv. Roeselare"></label><label>Datum<input class="r-d" type="date" value="'+esc(r.d)+'"></label><label>Belang<select class="r-t"><option'+(r.t==="A"?" selected":"")+'>A</option><option'+(r.t==="B"?" selected":"")+'>B</option><option'+(r.t==="C"?" selected":"")+'>C</option></select></label><button type="button" class="x" data-rdel="'+i+'" aria-label="Verwijderen">×</button></div>').join("")}
+function raceRows(rs){$("s-races").innerHTML=rs.map((r,i)=>'<div class="rrow" data-i="'+i+'"><label>Naam<input class="r-n" value="'+esc(r.n)+'" maxlength="40" placeholder="bv. Halve marathon"></label><label>Waar<input class="r-w" value="'+esc(r.w||"")+'" maxlength="80" placeholder="bv. Roeselare"></label><label>Datum<input class="r-d" type="date" value="'+esc(r.d)+'"></label><label>Belang<select class="r-t"><option'+(r.t==="A"?" selected":"")+'>A</option><option'+(r.t==="B"?" selected":"")+'>B</option><option'+(r.t==="C"?" selected":"")+'>C</option></select></label><button type="button" class="x" data-rdel="'+i+'" aria-label="Verwijderen">×</button></div>').join("")}
 const readRaces=()=>[...document.querySelectorAll("#s-races .rrow")].map(r=>({n:r.querySelector(".r-n").value.trim(),w:r.querySelector(".r-w").value.trim(),d:r.querySelector(".r-d").value,t:r.querySelector(".r-t").value}));
 function coachSel(){const p=A().p,cs=coaches(),w=$("s-coachw"),r=(document.querySelector("input[name=rol]:checked")||{}).value||p.rol;w.hidden=r!=="gecoacht";$("s-coach").innerHTML='<option value="">nog geen coach</option>'+cs.map(c=>'<option value="'+c.id+'"'+(p.coachId===c.id?" selected":"")+'>'+esc(c.naam)+'</option>').join("");$("s-coachn").textContent=cs.length?"Je coach ziet je schema, trainingen, zones en ochtendcheck.":"Er is nog geen goedgekeurde coach. De beheerder koppelt je later.";
   const cn=r==="coach"&&!(PROF&&PROF.coach_ok);if(cn)$("s-coachn").textContent="";}
@@ -1631,6 +1639,32 @@ function vSum(){const a=A();if(!a||!a.p||!$("vHead"))return;const p=a.p,h=new Da
       set("vArpe",l.rpe?'<b>Gevoelscore</b> · '+l.rpe+'/5':S2.own||S2.L.length?'Hoe zwaar voelde het? Geef een score in de analyse.':'',1)}}
   vApply()}
 {const w=f=>function(){const r=f.apply(this,arguments);try{vSum()}catch(e){console.error(e)}return r};hero=w(hero);anaR=w(anaR);weekR=w(weekR);feelR=w(feelR);metricsR=w(metricsR);who=w(who)}
+/* ---------- "Waar": aanvullen terwijl je typt ---------- */
+const AC_SEL=".ob-rw,.r-w,#e-p,#p-p",ACC=new Map();let AC={inp:null,list:[],act:-1,t:null,ab:null,sess:"",skip:false};
+const acBox=()=>{let b=$("acbox");if(!b){b=document.createElement("div");b.id="acbox";b.hidden=true;b.innerHTML='<ul role="listbox" id="acl" aria-label="Voorstellen"></ul><p class="acsrc"></p>';document.body.appendChild(b);
+  b.addEventListener("mousedown",e=>e.preventDefault());b.addEventListener("click",e=>{const li=e.target.closest("li[data-i]");if(li)acPick(+li.dataset.i)})}return b};
+function acClose(){const b=$("acbox");if(b)b.hidden=true;if(AC.inp){AC.inp.setAttribute("aria-expanded","false");AC.inp.removeAttribute("aria-activedescendant")}AC.list=[];AC.act=-1}
+function acPlace(){const b=acBox(),r=AC.inp.getBoundingClientRect(),vw=document.documentElement.clientWidth,W=Math.min(Math.max(r.width,280),vw-16),L=Math.max(8,Math.min(r.left,vw-8-W));b.style.left=(L+window.scrollX)+"px";b.style.top=(r.bottom+window.scrollY+4)+"px";b.style.width=W+"px"}
+function acShow(res){const b=acBox(),i=AC.inp;if(!i||document.activeElement!==i)return;AC.list=res.r||[];AC.act=-1;if(!AC.list.length){acClose();return}
+  b.querySelector("ul").innerHTML=AC.list.map((h,n)=>'<li role="option" id="aco'+n+'" data-i="'+n+'" aria-selected="false"><b>'+esc(h.t)+'</b>'+(h.s?'<span>'+esc(h.s)+'</span>':'')+'</li>').join("");
+  b.querySelector(".acsrc").textContent=/google/.test(res.bron||"")?"Voorstellen van Google Maps en OpenStreetMap":"Voorstellen van © OpenStreetMap";
+  acPlace();b.hidden=false;i.setAttribute("aria-expanded","true")}
+function acMark(){document.querySelectorAll("#acl li").forEach((li,n)=>li.setAttribute("aria-selected",n===AC.act));if(AC.inp){if(AC.act>=0)AC.inp.setAttribute("aria-activedescendant","aco"+AC.act);else AC.inp.removeAttribute("aria-activedescendant")}
+  const a=$("aco"+AC.act);if(a)a.scrollIntoView({block:"nearest"})}
+function acPick(n){const h=AC.list[n],i=AC.inp;if(!h||!i)return;i.value=h.v.slice(0,+i.maxLength>0?+i.maxLength:80);AC.skip=true;i.dispatchEvent(new Event("input",{bubbles:true}));i.dispatchEvent(new Event("change",{bubbles:true}));AC.skip=false;AC.sess="";acClose()}
+async function acFetch(q){const k=q.toLowerCase();if(ACC.has(k))return ACC.get(k);if(!sb||!CFG.url)return{r:[]};
+  if(AC.ab)AC.ab.abort();AC.ab=new AbortController();const {data:{session}}=await sb.auth.getSession();
+  const r=await fetch(CFG.url+"/functions/v1/plaats",{method:"POST",signal:AC.ab.signal,headers:{"Content-Type":"application/json",Authorization:"Bearer "+(session?session.access_token:""),apikey:CFG.key},body:JSON.stringify({q,s:AC.sess})});
+  const j=r.ok?await r.json():{r:[]};if(r.ok){if(ACC.size>200)ACC.clear();ACC.set(k,j)}return j}
+document.addEventListener("focusin",e=>{const i=e.target;if(!i.matches||!i.matches(AC_SEL))return;i.setAttribute("autocomplete","off");i.setAttribute("role","combobox");i.setAttribute("aria-autocomplete","list");i.setAttribute("aria-controls","acl");i.setAttribute("aria-expanded","false");
+  if(AC.inp!==i){acClose();AC.inp=i}if(!AC.sess)AC.sess=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2))});
+document.addEventListener("focusout",e=>{if(e.target===AC.inp)setTimeout(()=>{if(document.activeElement!==AC.inp)acClose()},120)});
+document.addEventListener("input",e=>{const i=e.target;if(AC.skip||!i.matches||!i.matches(AC_SEL))return;AC.inp=i;clearTimeout(AC.t);const q=i.value.trim();if(q.length<2){acClose();return}
+  AC.t=setTimeout(async()=>{try{const res=await acFetch(q);if(AC.inp===i&&i.value.trim()===q)acShow(res)}catch(err){if(err.name!=="AbortError")console.error(err)}},220)});
+document.addEventListener("keydown",e=>{const i=e.target;if(i!==AC.inp||!AC.list.length||$("acbox").hidden)return;
+  if(e.key==="ArrowDown"){e.preventDefault();AC.act=(AC.act+1)%AC.list.length;acMark()}else if(e.key==="ArrowUp"){e.preventDefault();AC.act=(AC.act-1+AC.list.length)%AC.list.length;acMark()}
+  else if(e.key==="Enter"&&AC.act>=0){e.preventDefault();acPick(AC.act)}else if(e.key==="Escape"){e.preventDefault();acClose()}});
+window.addEventListener("resize",()=>{if(AC.inp&&!$("acbox").hidden)acPlace()});
 function all(){if(AUTHST!=="klaar")return;try{fotoR()}catch(e){}document.body.classList.toggle("conly",CO(A().p));who();goalsR();strip();hero();metricsR();peilR();weekR();anaR();feelR();plan();logList();linkR();meldR();gear();settings();coachSel();ledenR();zonesR();clubR();coachR()}
 const VIEWS=["vandaag","plan","club","coach","logboek","zones","materiaal","instellingen"];
 function route(){const G={uit:"auth",nieuw:"auth",wacht:"wacht",laden:"laden",fout:"laden"}[AUTHST];["auth","wacht","laden"].forEach(k=>$("v-"+k).hidden=k!==G);
