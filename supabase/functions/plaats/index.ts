@@ -71,13 +71,13 @@ const LAT = 50.95, LON = 3.2;   // West-Vlaanderen: dichtbij komt eerst, maar al
 export async function zoek(q: string, sess: string, key: string, f: typeof fetch = fetch): Promise<{ r: Hit[]; bron: string }> {
   const ph = (async () => {
     const u = `https://photon.komoot.io/api/?${new URLSearchParams({ q, limit: "8", lat: String(LAT), lon: String(LON) })}`;
-    const r = await f(u, { headers: { "User-Agent": "LegatiTriDagboek/2027 (club-app)" } });
+    const r = await f(u, { headers: { "User-Agent": "LegatiTriDagboek/2027 (club-app)" }, signal: AbortSignal.timeout(4000) });
     return r.ok ? photonHits(await r.json()) : [];
   })().catch(() => [] as Hit[]);
   const go = key ? (async () => {
     const body: Record<string, unknown> = { input: q, languageCode: "nl", regionCode: "be", locationBias: { circle: { center: { latitude: LAT, longitude: LON }, radius: 50000 } } };
     if (/^[A-Za-z0-9-]{8,64}$/.test(sess)) body.sessionToken = sess;
-    const r = await f("https://places.googleapis.com/v1/places:autocomplete", { method: "POST", headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key }, body: JSON.stringify(body) });
+    const r = await f("https://places.googleapis.com/v1/places:autocomplete", { method: "POST", headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key }, body: JSON.stringify(body), signal: AbortSignal.timeout(4000) });
     if (!r.ok) { console.error("google", r.status); return [] as Hit[]; }
     return googleHits(await r.json());
   })().catch(() => [] as Hit[]) : Promise.resolve([] as Hit[]);
@@ -104,19 +104,19 @@ if (typeof Deno !== "undefined" && Deno.serve) {
   Deno.serve(async (req) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
     try {
+      // de handtekening van het token is al gecontroleerd (verify_jwt); hier enkel wie het is en of hij lid is
       const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-      const { data: { user } } = token ? await db.auth.getUser(token) : { data: { user: null } };
-      if (!user) return json({ error: "niet_ingelogd" }, 401);
-      const { data: p } = await db.from("profiles").select("status").eq("id", user.id).maybeSingle();
-      if (p?.status !== "actief") return json({ error: "geen_lid" }, 403);
+      const sub = (() => { try { const b = token.split(".")[1]; return String(JSON.parse(atob(b.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - b.length % 4) % 4))).sub ?? ""); } catch { return ""; } })();
+      if (!/^[0-9a-f-]{36}$/i.test(sub)) return json({ error: "niet_ingelogd" }, 401);
       const body = await req.json().catch(() => ({}));
       const q = clean(body?.q);
       if (q.length < 2) return json({ r: [], bron: "" });
       const k = q.toLowerCase(), c = cache.get(k);
-      if (c && Date.now() - c.at < 6 * 3600_000) return json(c.v);
-      const v = await zoek(q, typeof body?.s === "string" ? body.s : "", KEY);
-      if (cache.size > 500) cache.clear();
-      cache.set(k, { at: Date.now(), v });
+      const lid = db.from("profiles").select("status").eq("id", sub).maybeSingle();          // tegelijk met het zoeken
+      const zk = c && Date.now() - c.at < 6 * 3600_000 ? Promise.resolve(c.v) : zoek(q, typeof body?.s === "string" ? body.s : "", KEY);
+      const [{ data: p }, v] = await Promise.all([lid, zk]);
+      if (p?.status !== "actief") return json({ error: "geen_lid" }, 403);
+      if (v.r.length) { if (cache.size > 500) cache.clear(); cache.set(k, { at: Date.now(), v }); }
       return json(v);
     } catch (e) {
       console.error(e);
