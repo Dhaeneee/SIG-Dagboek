@@ -414,6 +414,7 @@ body.onb #nav,body.onb .gearbtn,body.onb .count{display:none}body.onb #sub{visib
 .crp.g{color:light-dark(#146b3f,#6fd69e)}.crp.o{color:light-dark(#a35f00,#f6b75a)}.crp.r{color:light-dark(#a82a20,#f2847a)}
 .cmorn{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;margin-top:8px;font-size:14.5px}.cmorn .cml{font-weight:700;color:var(--ink)}.cmorn .crp b{color:var(--ink);font-weight:600;margin-right:2px}
 p.cmorn{display:block}
+@media(max-width:599px){#vGoals{margin:0 calc(-1 * max(4vw,16px)) 14px;border-radius:24px;padding:14px max(4vw,16px) 0}}
 </style>
 </head>
 <body>
@@ -458,7 +459,6 @@ p.cmorn{display:block}
 <section id="v-vandaag">
   <article class="vc vhead" id="vHead">
     <h1 class="vname" id="vName"></h1>
-    <p class="vrace" id="vRace" hidden><i aria-hidden="true"></i><span></span></p>
   </article>
   <article class="vc vhead vgoals" id="vGoals">
     <div class="goals" id="goals"></div>
@@ -1533,7 +1533,6 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener("click",e=>{const x=e.target.closest&&e.target.closest("a[data-anday]");if(!x)return;VST.ana={o:true,d:TODAY};const b=document.querySelector('#v-vandaag .vt[data-vt=ana]');if(b)vSet(b,true)},true);
 function vSum(){const a=A();if(!a||!a.p||!$("vHead"))return;const p=a.p,h=new Date().getHours(),nm=String(p.naam||"").trim().split(/\s+/)[0];
   $("vName").textContent=(h<12?"Goeiemorgen":h<18?"Goeiemiddag":"Goeieavond")+(nm?", "+short(nm):"");
-  const up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((x,y)=>x.d<y.d?-1:1),nx=up.find(r=>r.t==="A")||up[0],dd=nx?diff(TODAY,nx.d):0;$("vRace").hidden=!nx;if(nx)$("vRace").querySelector("span").textContent=(nx.n||"Wedstrijd")+(nx.w?" "+nx.w:"")+" · "+(dd?"nog "+dd+(dd===1?" dag":" dagen"):"vandaag!");
   const x=session(p,sel);$("vPlan").style.setProperty("--acc",x&&x.k!=="rust"&&!x.empty?"var(--"+sk(x.sp)+")":"var(--rest)");
   const pb=$("vb-plan"),pe=!$("htarget").textContent.trim()&&!$("hz").innerHTML&&$("hfuel").hidden&&$("hadvice").hidden;document.querySelector('#vPlan .vt').hidden=pe;
   // herstel (altijd vandaag)
