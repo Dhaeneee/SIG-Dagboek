@@ -1660,7 +1660,7 @@ document.addEventListener("focusin",e=>{const i=e.target;if(!i.matches||!i.match
   if(AC.inp!==i){acClose();AC.inp=i}if(!AC.sess)AC.sess=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2))});
 document.addEventListener("focusout",e=>{if(e.target===AC.inp)setTimeout(()=>{if(document.activeElement!==AC.inp)acClose()},120)});
 document.addEventListener("input",e=>{const i=e.target;if(AC.skip||!i.matches||!i.matches(AC_SEL))return;AC.inp=i;clearTimeout(AC.t);const q=i.value.trim();if(q.length<2){acClose();return}
-  AC.t=setTimeout(async()=>{try{const res=await acFetch(q);if(AC.inp===i&&i.value.trim()===q)acShow(res)}catch(err){if(err.name!=="AbortError")console.error(err)}},220)});
+  AC.t=setTimeout(async()=>{try{const res=await acFetch(q);if(AC.inp===i&&i.value.trim()===q)acShow(res)}catch(err){/* geen verbinding: gewoon geen voorstellen */}},220)});
 document.addEventListener("keydown",e=>{const i=e.target;if(i!==AC.inp||!AC.list.length||$("acbox").hidden)return;
   if(e.key==="ArrowDown"){e.preventDefault();AC.act=(AC.act+1)%AC.list.length;acMark()}else if(e.key==="ArrowUp"){e.preventDefault();AC.act=(AC.act-1+AC.list.length)%AC.list.length;acMark()}
   else if(e.key==="Enter"&&AC.act>=0){e.preventDefault();acPick(AC.act)}else if(e.key==="Escape"){e.preventDefault();acClose()}});
