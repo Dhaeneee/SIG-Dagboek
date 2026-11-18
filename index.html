@@ -403,22 +403,12 @@ body.onb #nav,body.onb .gearbtn,body.onb .count{display:none}body.onb #sub{visib
 .glogo{display:block;width:132px;height:132px;border-radius:26px;margin:0 0 18px}
 .wd.today .wdd,.wd.on.today .wdd{color:var(--legati-or)}
 
-/* doelen onder elkaar op gsm */
-.tlv{display:none;list-style:none;margin:0;padding:2px 0 8px}
-.tlv li{position:relative;display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:0 10px;align-items:start;padding:0 0 14px}
-.tlv li:last-child{padding-bottom:4px}
-.tlv li:not(:last-child)::after{content:"";position:absolute;left:11.5px;top:18px;bottom:-4px;width:3px;border-radius:2px;background:rgba(255,255,255,.2)}
-.tlv li.done::after{background:var(--run)}
-.tvd{display:block;width:16px;height:16px;margin:2px auto 0;border-radius:50%;background:var(--harbour);border:3px solid #fff;position:relative;z-index:1;box-sizing:border-box}
-.tv.a .tvd{width:22px;height:22px;margin-top:-1px;background:var(--run);border-color:var(--run)}
-.tv.c .tvd{width:12px;height:12px;margin-top:4px}
-.tv.done .tvd{background:#7fe0aa;border-color:#7fe0aa}
-.tv b{display:block;font-size:16px;line-height:1.25}.tv span{display:block;font-size:13.5px;color:#a9c1d9;line-height:1.35;margin-top:1px}
-.tv em{font-style:normal;font-size:14px;font-weight:600;white-space:nowrap;padding-top:1px}.tv.done em{color:#7fe0aa}
-.tlv .tvnow{grid-template-columns:26px minmax(0,1fr);align-items:center;padding-bottom:12px}
-.tvnow i{display:block;width:16px;height:4px;border-radius:2px;background:#fff;margin:0 auto;position:relative;z-index:1;box-shadow:0 0 0 3px var(--harbour)}
-.tvnow span{font-size:13px;font-weight:600;color:#ffb07a}
-@media(max-width:599px){.goals .tlx{display:none}.goals .tlv{display:block}}
+/* doelen op gsm: zonder startkolom, rijen netjes op één lijn */
+.goals .tlm{display:none}
+@media(max-width:599px){.goals .tld{display:none}.goals .tlm{display:block}
+.tlm .tl{grid-template-columns:repeat(var(--n),minmax(74px,1fr))}.tlm .tm{padding:28px 3px 0}
+.tlm .tm b{display:flex;align-items:flex-end;justify-content:center;text-align:center;min-height:2.45em;font-size:13.5px;line-height:1.2;overflow-wrap:normal;hyphens:manual}
+.tlm .tm span{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tlm .tm em{font-size:13px;margin-top:2px}}
 /* coach: rustpols */
 .ccard .crp,.cmorn .crp{font-weight:600}.crp small{font-weight:400;color:var(--mute);font-size:12.5px}
 .crp.g{color:light-dark(#146b3f,#6fd69e)}.crp.o{color:light-dark(#a35f00,#f6b75a)}.crp.r{color:light-dark(#a82a20,#f2847a)}
@@ -1012,19 +1002,19 @@ const sk=sp=>sp==="zwemmen"?"swim":sp==="fietsen"?"bike":sp==="lopen"||sp==="tri
 function who(){const p=A().p,up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((a,b)=>a.d<b.d?-1:1),nx=up.find(r=>r.t==="A")||up[0];
   $("sub").textContent=short(p.naam);const nd=nx?diff(TODAY,nx.d):0;$("count").innerHTML=nx?'<span class="rn2">'+esc((nx.n||"Wedstrijd")+(nx.w?" "+nx.w:""))+'</span><span class="cd">'+(nd?"nog "+nd+(nd===1?" dag":" dagen"):"vandaag!")+'</span>':'';document.querySelector(".count").hidden=!nx;
   if(p.theme&&p.theme!=="auto")document.documentElement.dataset.theme=p.theme;else delete document.documentElement.dataset.theme}
-function tlv(M){const Y=d=>P(d).toLocaleDateString("nl-BE",{day:"numeric",month:"short",year:"numeric"}).replace(".","");let h='<ol class="tlv">',nu=false;
-  M.forEach(m=>{const dl=diff(TODAY,m.d),done=m.d<TODAY;if(!nu&&m.d>TODAY){nu=true;h+='<li class="tvnow"><i aria-hidden="true"></i><span>Vandaag</span></li>'}
-    h+='<li class="tv'+(m.t==="A"?" a":m.t==="C"?" c":"")+(done?" done":"")+'"><i class="tvd" aria-hidden="true"></i><div><b>'+esc(m.n||"Wedstrijd")+'</b><span>'+[m.w?esc(m.w):"",Y(m.d)].filter(Boolean).join(" · ")+'</span></div><em>'+(m.st?(done?"gestart":dl===0?"vandaag":"nog "+dl+" d"):done?"gedaan ✓":dl===0?"vandaag!":"nog "+dl+" d")+'</em></li>'});
-  return h+'</ol>'}
 function goalsR(){const p=A().p,Y=d=>P(d).toLocaleDateString("nl-BE",{day:"numeric",month:"short",year:"numeric"}).replace(".","");
   const rs=(p.races||[]).filter(r=>r.d&&(!p.start||r.d>=p.start)).sort((a,b)=>a.d<b.d?-1:1);
   const head='<div class="gh"><h2>Je doelen</h2><a href="#instellingen" data-goto="doelen">+ Doel toevoegen</a></div>';
   if(!rs.length){$("goals").innerHTML=head+'<p class="gempty">Nog geen doelen. Voeg je wedstrijden toe, dan zie je hier je weg ernaartoe.</p>';return}
-  const M=[{st:1,n:"Start",w:"",d:p.start||TODAY,t:"S"}].concat(rs),n=M.length,cx=i=>(i+.5)/n*100;
-  let x=cx(0);if(TODAY>=M[n-1].d)x=cx(n-1);else for(let i=0;i<n-1;i++)if(TODAY>=M[i].d&&TODAY<M[i+1].d){x=cx(i)+(cx(i+1)-cx(i))*diff(M[i].d,TODAY)/Math.max(1,diff(M[i].d,M[i+1].d));break}
-  $("goals").innerHTML=head+'<div class="tlx"><div class="tl" style="--n:'+n+'"><span class="tr" style="left:'+cx(0)+'%;right:'+(100-cx(n-1))+'%"></span><span class="tf" style="left:'+cx(0)+'%;width:'+(x-cx(0))+'%"></span><span class="tnow" style="left:'+x+'%" title="Vandaag"></span>'+
-    M.map(m=>{const dl=diff(TODAY,m.d),done=m.d<TODAY;return'<div class="tm'+(m.t==="A"?" a":m.t==="C"?" c":"")+(done?" done":"")+'"><b>'+esc(m.n||"Wedstrijd")+'</b>'+(m.w?'<span>'+esc(m.w)+'</span>':'')+'<span>'+Y(m.d)+'</span><em>'+(m.st?(done?"gestart":dl===0?"vandaag":"nog "+dl+" d"):done?"gedaan ✓":dl===0?"vandaag!":"nog "+dl+" d")+'</em></div>'}).join("")+'</div></div>'+tlv(M);
-  const t=$("goals").querySelector(".tlx");if(t&&t.scrollWidth>t.clientWidth){t.scrollLeft=Math.max(0,t.scrollWidth*x/100-t.clientWidth/2);const f=()=>t.classList.toggle("more",t.scrollLeft+t.clientWidth<t.scrollWidth-4);f();t.addEventListener("scroll",f,{passive:true})}}
+  const S0={st:1,n:"Start",w:"",d:p.start||TODAY,t:"S"},X={};
+  const tlh=(M,cls,lead)=>{const n=M.length,cx=i=>(i+.5)/n*100,x0=lead?0:cx(0);let x=cx(0);
+    if(TODAY>=M[n-1].d)x=cx(n-1);else if(TODAY<M[0].d)x=lead?Math.max(1.5,cx(0)*Math.min(1,diff(S0.d,TODAY)/Math.max(1,diff(S0.d,M[0].d)))):cx(0);
+    else for(let i=0;i<n-1;i++)if(TODAY>=M[i].d&&TODAY<M[i+1].d){x=cx(i)+(cx(i+1)-cx(i))*diff(M[i].d,TODAY)/Math.max(1,diff(M[i].d,M[i+1].d));break}
+    X[cls]=x;
+    return'<div class="tlx '+cls+'"><div class="tl" style="--n:'+n+'"><span class="tr" style="left:'+x0+'%;right:'+(100-cx(n-1))+'%"></span><span class="tf" style="left:'+x0+'%;width:'+(x-x0)+'%"></span><span class="tnow" style="left:'+x+'%" title="Vandaag"></span>'+
+      M.map(m=>{const dl=diff(TODAY,m.d),done=m.d<TODAY;return'<div class="tm'+(m.t==="A"?" a":m.t==="C"?" c":"")+(done?" done":"")+'"><b>'+esc(m.n||"Wedstrijd")+'</b><span class="tmw">'+(m.w?esc(m.w):"&nbsp;")+'</span><span>'+Y(m.d)+'</span><em>'+(m.st?(done?"gestart":dl===0?"vandaag":"nog "+dl+" d"):done?"gedaan ✓":dl===0?"vandaag!":"nog "+dl+" d")+'</em></div>'}).join("")+'</div></div>'};
+  $("goals").innerHTML=head+tlh([S0].concat(rs),"tld",false)+tlh(rs,"tlm",true);
+  $("goals").querySelectorAll(".tlx").forEach(t=>{if(t.scrollWidth>t.clientWidth){const x=X[t.classList.contains("tlm")?"tlm":"tld"];t.scrollLeft=Math.max(0,t.scrollWidth*x/100-t.clientWidth/2);const f=()=>t.classList.toggle("more",t.scrollLeft+t.clientWidth<t.scrollWidth-4);f();t.addEventListener("scroll",f,{passive:true})}})}
 function strip(){const p=A().p,a=A(),ds=[0,1,2,3,4,5,6].map(i=>add(sw0,i));
   $("wlab2").textContent=(p.start&&sw0>=mon(p.start)?"Week "+(Math.floor(diff(mon(p.start),sw0)/7)+1)+" · ":"")+rangeL(sw0,ds[6]);
   $("wtoday").hidden=TODAY>=sw0&&TODAY<=ds[6]&&sel===TODAY;
