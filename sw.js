@@ -7,7 +7,7 @@ self.addEventListener("push", e => {
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data ? e.data.text() : "" }; }
   e.waitUntil((async () => {
     await self.registration.showNotification(d.title || "Legati Tri Dagboek", {
-      body: d.body || "", icon: "icon-192.png", badge: "badge-96.png", tag: d.tag || undefined,
+      body: d.body || "", icon: "icon-192.png?v=legati2", badge: "badge-96.png", tag: d.tag || undefined,
       data: { url: d.url || "#vandaag" },
     });
     // staat de app open, dan haalt ze meteen de nieuwe gegevens op
