@@ -73,3 +73,13 @@ Tot de Garmin- en Wahoo-koppeling klaar is, laden leden hun training op als `.fi
 ## Lokaal testen
 
 `test/mksite.sh` bouwt een testversie met een nagebootste Supabase (`test/mock-supabase.js`); `test/e2e.py` doorloopt de hele testronde. `test/rls_test.sql` test de privacyregels op een lokale Postgres.
+
+## Persoonlijke schema-link (alleen lezen)
+
+Voor een lid dat zijn trainingsschema ook in een eigen app wil zien. Andere leden merken er niets van:
+er is geen knop of scherm in de website.
+
+- Migratie `0012_schema_feed.sql`: tabel `schema_feed` (enkel leesbaar voor de server, geen rechten voor anon/authenticated).
+- Functie `schema` (deploy zonder JWT-controle): `GET /functions/v1/schema/<sleutel>` geeft het schema van dat lid als JSON,
+  met dezelfde zichtbaarheidsregel als de website (een gecoachte sporter ziet enkel vrijgegeven weken). Eenrichting: er wordt niets gewijzigd.
+- De beheerder maakt of trekt een link in via de SQL Editor (zie de commentaar in de migratie).
