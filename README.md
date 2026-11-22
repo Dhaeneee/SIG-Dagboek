@@ -82,4 +82,5 @@ er is geen knop of scherm in de website.
 - Migratie `0012_schema_feed.sql`: tabel `schema_feed` (enkel leesbaar voor de server, geen rechten voor anon/authenticated).
 - Functie `schema` (deploy zonder JWT-controle): `GET /functions/v1/schema/<sleutel>` geeft het schema van dat lid als JSON,
   met dezelfde zichtbaarheidsregel als de website (een gecoachte sporter ziet enkel vrijgegeven weken). Eenrichting: er wordt niets gewijzigd.
+  Sinds versie 2 staan ook de eigen Garmin-gegevens van dat lid erin (`garmin`: activiteiten van 60 dagen, slaap, HRV, rustpols, stress en VO2max van 30 dagen).
 - De beheerder maakt of trekt een link in via de SQL Editor (zie de commentaar in de migratie).

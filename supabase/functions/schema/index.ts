@@ -3,6 +3,8 @@
 // Bedoeld voor een eigen app van een lid die zijn schema overneemt (eenrichting: niets wordt hier gewijzigd).
 // Zonder inloggen, maar met een lange geheime sleutel per lid (tabel schema_feed, enkel leesbaar voor de server).
 // Er is geen knop in de website; de beheerder maakt de sleutel aan in de database.
+// Versie 2: ook de eigen Garmin-gegevens van dit lid (activiteiten 60 dagen, slaap/HRV/rustpols/stress/VO2max 30 dagen),
+// zodat de eigen app van het lid geen aparte Garmin-koppeling nodig heeft.
 // Deploy zonder JWT-controle.
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -31,6 +33,14 @@ export function schema(plan: { cplan?: any; cnote?: any; cpub?: any } | null, ro
   return { trainingen, weeknotities };
 }
 
+const GARMIN = ["activity", "daily", "sleep", "hrv", "stress", "metrics"];
+// eigen Garmin-rijen van het lid, enkel kind/ref/day/data
+// deno-lint-ignore no-explicit-any
+export function garmin(rows: any[] | null, vanAct: string, vanGez: string) {
+  return (rows ?? []).filter((r) => r && GARMIN.includes(r.kind) && typeof r.ref === "string" && r.data && (!r.day || r.day >= (r.kind === "activity" ? vanAct : vanGez)))
+    .map((r) => ({ kind: r.kind, ref: r.ref, day: r.day ?? null, data: r.data }));
+}
+
 function sbKey(): string {
   try { const j = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}"); if (j && typeof j.default === "string" && j.default) return j.default; } catch { /* oude sleutel */ }
   return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -51,8 +61,10 @@ if (typeof Deno !== "undefined" && Deno.serve) {
       if (p?.status !== "actief") return fout(404);
       const { data: plan } = await db.from("plans").select("cplan, cnote, cpub, updated_at").eq("athlete_id", f.user_id).maybeSingle();
       const van = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
+      const van30 = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+      const { data: g } = await db.from("garmin_data").select("kind, ref, day, data").eq("user_id", f.user_id).gte("day", van).order("day").limit(2000);
       await db.from("schema_feed").update({ last_used: new Date().toISOString() }).eq("user_id", f.user_id);
-      return new Response(JSON.stringify({ bron: "Legati Tri Dagboek", versie: 1, gewijzigd: plan?.updated_at ?? null, gemaakt: new Date().toISOString(), ...schema(plan, p.rol, van) }), { status: 200, headers: hdr });
+      return new Response(JSON.stringify({ bron: "Legati Tri Dagboek", versie: 2, gewijzigd: plan?.updated_at ?? null, gemaakt: new Date().toISOString(), ...schema(plan, p.rol, van), garmin: garmin(g, van, van30) }), { status: 200, headers: hdr });
     } catch (e) { console.error(e); return fout(503); }
   });
 }
