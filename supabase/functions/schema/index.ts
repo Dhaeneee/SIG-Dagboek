@@ -35,7 +35,6 @@ export function schema(plan: { cplan?: any; cnote?: any; cpub?: any } | null, ro
 
 const GARMIN = ["activity", "daily", "sleep", "hrv", "stress", "metrics"];
 // eigen Garmin-rijen van het lid, enkel kind/ref/day/data
-// deno-lint-ignore no-explicit-any
 export function garmin(rows: any[] | null, vanAct: string, vanGez: string) {
   return (rows ?? []).filter((r) => r && GARMIN.includes(r.kind) && typeof r.ref === "string" && r.data && (!r.day || r.day >= (r.kind === "activity" ? vanAct : vanGez)))
     .map((r) => ({ kind: r.kind, ref: r.ref, day: r.day ?? null, data: r.data }));
