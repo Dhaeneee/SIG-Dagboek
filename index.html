@@ -140,6 +140,9 @@ td:first-child{border-left:5px solid var(--zc,transparent);font-weight:600}
 .evact button[aria-pressed=true]{background:var(--go);border-color:var(--go);color:#fff}
 details.set summary{font-weight:700;font-size:18px;cursor:pointer}
 .scats{display:grid;gap:10px;margin-top:6px}
+details.sx,details.wov{margin-top:8px;font-size:15px}details.sx summary,details.wov summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details.wov{border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:10px 0}
+details.sx h4{font-size:15px;margin:12px 0 4px}details.sx p,details.wov p{margin:4px 0}.sxl{margin:4px 0;padding-left:18px}.sxl li{margin:3px 0}
 .scat{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:18px;padding:14px 16px;color:var(--ink);text-decoration:none}
 .scat:hover{border-color:var(--mute)}.scat:focus-visible{outline:2px solid var(--legati-or);outline-offset:2px}
 .scat svg{flex:none;width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:var(--legati-or)}
@@ -937,14 +940,19 @@ const LRM=p=>{const v=Math.max(15,(paceOf(p)||{}).bike||25),m=Math.ceil(50/v*60/
 const W=(p,a,b)=>{const q=(a+b)/2;return Math.round(p.ftp*a)+"–"+Math.round(p.ftp*b)+" W ("+(q<=.555?"Z1":q<=.755?"Z2":q<=.905?"Z3":q<=1.055?"Z4":q<=1.205?"Z5":"Z6")+")"};
 const SWF=[["hoofd laag, heupen hoog","4×50 m PB: 12,5 m scull #1 – 37,5 m crawl, R20\""],["lange slag","6×50 m inhaalslag, R20\""],["rotatie en balans","6×50 m 6-1-6 op je zij, R20\""],["techniek herhalen, ontspannen","6×50 m: scull #1, scull #2, doggy paddle, R20\""],["steun in het water","3×50 m PB: scull #1 – scull #2 – crawl, R20\""],["beenslag en ligging","4×50 m beenslag met plankje, R20\""],["alles samen","3×50 m inhaalslag + 3×50 m 6-1-6, R20\""],["CSS-test","4×50 m climax tot 80%, R20\""]];
 const wkInfo=(p,d)=>{const wi=Math.floor(diff(p.start,d)/7),seq=p.blok==="2:1"?[0,1,3,4,5,7]:[0,1,2,3,4,5,6,7];return{wi,w:seq[wi%seq.length],cyc:Math.floor(wi/seq.length)}};
-const PHC={basis:["#1b8f96","#fff"],opbouw:["#ef5a3c","#fff"],taper:["#e3a23a","#10242b"],herstel:["#9aa8ac","#10242b"]};
+const PHC={gewenning:["#7fbfa4","#10242b"],basis:["#1b8f96","#fff"],opbouw:["#ef5a3c","#fff"],spec:["#b8372a","#fff"],taper:["#e3a23a","#10242b"],herstel:["#9aa8ac","#10242b"]};
 function phasesOf(p){if(!p.start)return[];const rs=(p.races||[]).filter(r=>r.d&&r.d>=p.start).sort((a,b)=>a.d<b.d?-1:1),out=[];let cur=p.start;
-  const push=(k,n,a,b,t)=>{if(b<a)return;out.push({k,n,a,b,t,c:PHC[k][0],f:PHC[k][1]})};
+  const push=(k,n,a,b,t)=>{if(b<a)return;out.push({k,n,a,b,t,c:PHC[k][0],f:PHC[k][1]})},wk=(a,b)=>{const n=Math.max(1,Math.round((diff(a,b)+1)/7));return n+(n>1?" weken":" week")};
+  // beginners: eerst 4 weken gewenning
+  if(NVL(p)==="start"){const ge=add(p.start,27);push("gewenning","Gewenning",cur,ge,"Wennen aan regelmatig trainen ("+wk(cur,ge)+"): korte, rustige trainingen en techniek. Pezen en gewrichten passen zich trager aan dan je conditie.");cur=add(ge,1)}
   const big=rs.filter(r=>r.t!=="C");
-  big.forEach((r,ix)=>{const nx=big[ix+1];if(nx&&diff(r.d,nx.d)<=70&&!(r.t==="A"&&nx.t!=="A"))return;const L=r.t==="A"?16:10,nm=(r.n||"je wedstrijd")+(r.w?" "+r.w:""),tp=add(r.d,-13),bs=add(r.d,-L*7);
-    if(bs>cur){push("basis","Basis",cur,add(bs,-1),"Aerobe basis, techniek en kracht");cur=bs}
-    if(tp>cur){const tus=big.filter(x=>x.d>cur&&x.d<r.d).map(x=>(x.n||"wedstrijd")+(x.w?" "+x.w:""));push("opbouw","Opbouw "+(r.n||"wedstrijd"),cur,add(tp,-1),"Meer volume en wedstrijdspecifieke trainingen voor "+nm+(tus.length?", met "+tus.join(" en ")+" als tussendoel":""));cur=tp}
-    push("taper","Taper",cur,r.d,"Minder volume, fris aan de start van "+nm);const ha=add(r.d,1)>cur?add(r.d,1):cur,he=add(r.d,r.t==="A"?21:14);push("herstel","Herstel",ha,he,"Rustig herstellen na "+nm);cur=add(he,1)});
+  big.forEach((r,ix)=>{const nx=big[ix+1];if(nx&&diff(r.d,nx.d)<=70&&!(r.t==="A"&&nx.t!=="A"))return;
+    const t=kindOf(r),kd=t?t[3]:"",tl=Object.keys(TAPER[kd]||{1:1}).length,L=r.t==="A"?16:10,nm=(r.n||"je wedstrijd")+(r.w?" "+r.w:""),tp=add(r.d,-(tl*7-1)),bs=add(r.d,-L*7),sp0=add(tp,-(r.t==="A"?42:28));
+    if(bs>cur){push("basis","Basis",cur,add(bs,-1),"Rustige omvang en techniek opbouwen ("+wk(cur,add(bs,-1))+"): de basis waarop de rest steunt.");cur=bs}
+    if(sp0>cur){const tus=big.filter(x=>x.d>cur&&x.d<r.d).map(x=>(x.n||"wedstrijd")+(x.w?" "+x.w:""));push("opbouw","Opbouw",cur,add(sp0,-1),"Verder ontwikkelen ("+wk(cur,add(sp0,-1))+"): langere lange trainingen en drempel- of tempowerk"+(tus.length?", met "+tus.join(" en ")+" als tussendoel":"")+".");cur=sp0}
+    if(tp>cur){push("spec","Wedstrijdspecifiek",cur,add(tp,-1),"Trainen zoals op de wedstrijd ("+wk(cur,add(tp,-1))+"): wedstrijdtempo"+(/^(im|half|kwart|tri|sprint)$/.test(kd)?", koppeltrainingen":"")+", voeding en materiaal oefenen voor "+nm+".");cur=tp}
+    push("taper","Taper",cur,r.d,"Afbouwen ("+tl+(tl>1?" weken":" week")+", passend bij deze afstand): minder omvang, korte prikkels op wedstrijdtempo, fris aan de start van "+nm+".");
+    const ha=add(r.d,1)>cur?add(r.d,1):cur,he=add(r.d,r.t==="A"?21:14);push("herstel","Herstel",ha,he,"Rustig herstellen na "+nm+" ("+wk(ha,he)+"): weinig en rustig trainen, pas daarna weer opbouwen.");cur=add(he,1)});
   return out}
 const phaseOn=(p,d)=>phasesOf(p).find(ph=>d>=ph.a&&d<=ph.b)||null;
 const cPlanned=p=>(p.rol==="gecoacht"&&(p.src||"coach")==="coach")||(p.rol==="coach"&&p.src==="eigen");
@@ -1833,9 +1841,106 @@ function plan(){const a=A(),p=a.p,cp=cPlanned(p),ext=p.src==="coachbox"||p.src==
   const s0=mon(p.start),w0=add(mon(TODAY),-7)>s0?add(mon(TODAY),-7):s0,cpl=cp?Object.keys(p.cplan||{}).sort().pop():null,last=cp?mon(add(cpl&&cpl>TODAY?cpl:TODAY,7)):mon(add(Z,7));let h="",n=0;
   for(let w=w0;w<=last&&n<pN;w=add(w,7),n++){const end=add(w,6),now=TODAY>=w&&TODAY<=end,ph=phaseOn(p,add(w,3)),wi=Math.floor(diff(s0,w)/7)+1;let tot=0;const KM={};
     const ds=DN.map((dn,i)=>{const dd=add(w,i),x=session(p,dd),f=fuel(p,x,dd),done=dd<=TODAY&&a.log.some(l=>l.datum===dd);if(x&&x.min&&x.k!=="rust")tot+=x.min;if(x&&x.km&&x.k!=="rust"&&x.k!=="race")KM[x.sp]=(KM[x.sp]||0)+x.km;
-      return'<div class="day'+(dd===TODAY?" is":"")+(x&&x.k==="race"?" race":"")+'"><span class="k">'+dn+' '+fmt(dd)+'</span><b><span class="sd '+(!x||x.k==="rust"?"rest":sk(x.sp))+'"></span>'+esc(x?x.s:"—")+'</b>'+(x&&tk(x)?'<span>'+esc(tk(x))+'</span>':'')+(x&&x.z?'<em>'+esc(x.z)+'</em>':'')+(f&&f.mee?'<span class="fl">Voeding: '+f.c[0]+' koolhydraten · '+f.n[0]+' natrium · '+f.d[1]+'</span>':'')+(x&&x.adj?'<span class="adjl">Aangepast op jouw vraag</span>':'')+(done?'<span class="dn">✓ gedaan</span>':'')+'</div>'}).join("");
-    h+='<article class="week'+(now?" now":"")+'"><h3>Week '+wi+' <small>'+fmt(w)+' tot '+fmt(end)+(ph?', '+esc(ph.n.toLowerCase()):'')+(kmSum(KM)?', '+kmSum(KM):(tot?', '+dur(tot):''))+'</small></h3><p class="note" style="margin-top:4px">'+esc(weekFocus(p,w))+'</p><div class="days">'+ds+'</div></article>'}
+      return'<div class="day'+(dd===TODAY?" is":"")+(x&&x.k==="race"?" race":"")+'"><span class="k">'+dn+' '+fmt(dd)+'</span><b><span class="sd '+(!x||x.k==="rust"?"rest":sk(x.sp))+'"></span>'+esc(x?x.s:"—")+'</b>'+(x&&tk(x)?'<span>'+esc(tk(x))+'</span>':'')+(x&&x.z?'<em>'+esc(x.z)+'</em>':'')+(f&&f.mee?'<span class="fl">Voeding: '+f.c[0]+' koolhydraten · '+f.n[0]+' natrium · '+f.d[1]+'</span>':'')+(x&&x.adj?'<span class="adjl">Aangepast op jouw vraag</span>':'')+(done?'<span class="dn">✓ gedaan</span>':'')+(!ext&&x?sxH(p,dd,x):'')+'</div>'}).join("");
+    h+='<article class="week'+(now?" now":"")+'"><h3>Week '+wi+' <small>'+fmt(w)+' tot '+fmt(end)+(ph?', '+esc(ph.n.toLowerCase()):'')+(kmSum(KM)?', '+kmSum(KM):(tot?', '+dur(tot):''))+'</small></h3><p class="note" style="margin-top:4px">'+esc(weekFocus(p,w))+'</p>'+(!ext?weekOv(p,w):'')+'<div class="days">'+ds+'</div></article>'}
   $("weeks").innerHTML=h||'<p class="note">Nog geen weken in je plan.</p>';$("pmore").hidden=add(w0,pN*7)>last}
+/* ---------- Planner: weekoverzicht en volledige uitwerking per sessie ---------- */
+const SPN2={lopen:"Lopen",fietsen:"Fietsen",zwemmen:"Zwemmen"};
+// soort training: [code, type, doel, aanwijzingen, gevoel, veelgemaakte fout, extra stopregel, alternatief]
+function sMeta(x){const n=x.s||"",sp=x.sp,run=sp==="lopen",bike=sp==="fietsen";
+  if(/test/i.test(n))return["test","Test","Je huidige niveau meten, zodat je zones en tempo's kloppen.","Zelfde omstandigheden als de vorige test. Start gelijkmatig, geef pas in de laatste minuten alles.","Zwaar maar gelijkmatig; op het einde helemaal leeg.","Te snel vertrekken en daarna instorten.","Ben je ziek, slecht geslapen of heb je pijn: schuif de test een paar dagen op.","Lukt het niet deze week: doe de test volgende week, nooit op een vermoeide dag."];
+  if(run){
+    if(/herstel/i.test(n))return["herstel","Herstelloop","Bloed laten stromen en herstellen na zware dagen, zonder nieuwe belasting.","Korte, lichte passen, ontspannen schouders. Trager mag altijd.","Heel licht: je praat moeiteloos.","Toch sneller gaan omdat het goed voelt.","","Geen tijd of moe: sla hem over of wandel 30'. Een herstelloop haal je niet in."];
+    if(/marathontempo|tempo|drempel|1000|800|400|wedstrijd/i.test(n)&&!/tempoblokjes/i.test(n))return["kwal","Kwaliteitstraining","Je omslagpunt of wedstrijdtempo verbeteren.","Rustig inlopen is verplicht. De blokken gelijk lopen: het laatste blok even snel als het eerste.","Zwaar maar gecontroleerd in de blokken, licht in het herstel.","Het eerste blok te snel lopen.","Haal je het tempo niet meer of stijgt je hartslag veel hoger dan normaal: stop de blokken en loop rustig uit.","Geen tijd: doe de lichtere variant. Schuif een kwaliteitstraining niet naar de dag voor of na je lange training."];
+    if(/tempoblokjes|fartlek|korte blokjes/i.test(n))return["fart","Snelheid (speels)","Snelheid en loopeconomie, met beperkte belasting.","Versnel vlot maar ontspannen; in het herstel echt rustig joggen.","Vlot maar niet voluit in de stukken.","Van elk stuk een sprint maken.","Voelen je benen zwaar of heb je pijn: loop de rest rustig.","Geen tijd: halveer het aantal herhalingen."];
+    if(/progressief|negatieve split|vlotte finish/i.test(n))return["prog","Opbouwende duurloop","Leren rustig starten en het tempo gecontroleerd opbouwen.","Begin echt traag; versnel pas in het laatste deel en blijf onder de bovengrens.","Licht in het begin, matig op het einde.","Te snel starten, waardoor er van opbouwen niets overblijft.","","Geen tijd: doe enkel het eerste en laatste deel."];
+    if(/versnelling|cadans|loopscholing/i.test(n))return["tech","Techniek en souplesse","Loopeconomie: snellere, kortere passen en een soepele loop.","Hoge cadans, landen onder je lichaam. Versnellingen ontspannen, nooit voluit.","Licht; de versnellingen voelen vlot maar los.","De versnellingen als sprint lopen.","","Geen tijd: loop 20' rustig met de versnellingen op het einde."];
+    if(/Lange duurloop|Duurloop/i.test(n))return["lang","Lange duurloop","Duurvermogen: hart, spieren en pezen wennen aan lang bewegen.","Start trager dan je denkt. Drink elke 20 à 30' als je langer dan 75' loopt.","Licht tot matig; het laatste kwart voelt zwaarder door vermoeidheid, dat is normaal.","Een tempoloop maken van de lange duurloop.","Stijgt je hartslag boven de grens terwijl je even snel loopt: vertraag of wandel kort.","Te weinig tijd: liever korter en rustig dan sneller om toch de afstand te halen."];
+    return["rustig","Rustige duurloop","Aerobe basis opbouwen met een lage belasting.","Op hartslag lopen, niet op tempo.","Licht: je kan in zinnen praten.","Te snel lopen omdat het makkelijk voelt.","","Geen tijd: korter mag, een rustige loop haal je niet in."]}
+  if(bike){
+    if(/Lange rit/i.test(n))return["blang","Lange rit","Duurvermogen op de fiets, vetverbranding en voeding oefenen.","Op vermogen rijden, ook bergop. Eet en drink vanaf het eerste uur.","Licht tot matig; je kan blijven praten.","Te hard bergop of in de wind.","Is je hartslag uitzonderlijk hoog bij hetzelfde vermogen: rij rustiger terug.","Binnen op de rollen: maximaal 2 uur aan hetzelfde vermogen. De rest van de afstand laat je vallen, niet inhalen."];
+    if(/sprint|40\/20|piramide|VO2/i.test(n))return["bint","Intensieve intervallen","Je maximale vermogen en VO2max verhogen.","Volledig herstel tussen de blokken; elk blok even sterk.","Zeer zwaar in de blokken.","Te lang aan dezelfde tijd volhouden met dalend vermogen.","Haal je het vermogen niet meer: stop de blokken en rij uit.","Binnen op de rollen: zelfde blokken en vermogens."];
+    if(/sweet|drempel|FTP|wedstrijd|kracht|tempo|blokken/i.test(n))return["bkwal","Fietsblokken","Je duurvermogen bij hoger vermogen verbeteren (drempel, sweet spot of wedstrijdtempo).","Gelijkmatig vermogen per blok, rustig trappen in het herstel.","Matig tot zwaar, maar vol te houden.","Te hard starten in het eerste blok.","Haal je het vermogen niet of stijgt je hartslag veel hoger dan normaal: stop de blokken.","Binnen op de rollen: zelfde blokken en vermogens."];
+    if(/cadans|één been|spin|techniek|los rollen|soepel|zittend/i.test(n))return["btech","Fietstechniek","Een soepele, ronde trap en efficiënter fietsen.","Ontspannen bovenlichaam, rustig opbouwen in cadans.","Licht.","Te zwaar verzet kiezen.","","Binnen op de rollen: zelfde oefeningen, totale tijd ±75%."];
+    return["bduur","Rustige rit","Aerobe basis op de fiets.","Op vermogen rijden, soepel trappen.","Licht.","Te hard rijden omdat het goed voelt.","","Binnen op de rollen: ±75% van de tijd, zelfde vermogen."]}
+  if(/techniek|drill/i.test(n))return["ztech","Zwemtechniek","Je slag efficiënter maken: minder kracht voor hetzelfde tempo.","Rustig en geconcentreerd, kwaliteit boven snelheid.","Licht.","Haasten door de drills.","","Zwembad dicht: zet 'zwembad dicht' bij Instellingen, de app plant dan een vervanger."];
+  return["zreeks","Zwemreeks","Zwemduurvermogen en tempo rond je CSS.","Houd de rusttijden aan; het laatste stuk even snel als het eerste.","Matig; in de climax zwaar.","Te snel beginnen en de reeks niet uitzwemmen.","","Zwembad dicht: zet 'zwembad dicht' bij Instellingen, de app plant dan een vervanger."]}
+// intensiteit van een sessie volgens het zwaarste onderdeel
+const sCat=x=>{const z=(x.s||"")+" "+(x.z||"");if(x.k==="race"||/Z[4-6]\b|test/i.test(z))return"i";if(/Z3\b/.test(z))return"m";return"r"};
+const RPEX={r:"2 à 4 op 10: licht, je kan hele zinnen praten",m:"5 à 6 op 10: matig, korte zinnen",i:"7 à 9 op 10: zwaar, nog enkele woorden"};
+// onderdelen van de uitvoering uit de regels van de sessie
+function sParts(x){const L=String(x.z||"").split("\n").filter(Boolean),P={wu:[],tech:[],kern:[],cd:[],note:[]};let kern=false;
+  L.forEach((l,i)=>{let k;if(/^Tempo's zijn|^Neem |^Oefen|^Spullen|^Gem\. |^Geen zwaar|^Noteer|^Druk na|^Wandel elke/.test(l))k="note";
+    else if(!kern&&(/^Opwarming|inlopen|inrijden|^Eerste helft|^1\. |^In drie|^\d[\d,]* k?m (rustig|heel rustig)\b|^\d+' (Z[12]|rustig|soepel)/i.test(l))&&L.length>1)k="wu";
+    else if(/^Techniek|^Focus|loopscholing|^PB\/paddels/.test(l))k="tech";
+    else if(i>0&&/^Uitlopen|^Uitrijden|^Los\b|uitzwemmen|uitlopen in|^Rustig verder|^Rest van de rit/.test(l))k="cd";
+    else{k="kern";kern=true}
+    if(k==="kern"&&/telkens/.test(l)&&!/laatste/.test(l))l+=" (herstel enkel tussen de herhalingen, niet na de laatste)";
+    P[k].push(l)});
+  const steady=!P.wu.length&&!P.cd.length;
+  if(steady&&x.sp==="lopen"&&x.k!=="race"){P.wu.push("Eerste 1 à 2 km rustiger, onderaan je zone.");P.cd.push("Laatste 500 m uitbollen en wandelen.")}
+  if(steady&&x.sp==="fietsen"){P.wu.push("Eerste 15' soepel inrijden in Z1.");P.cd.push("Laatste 10' uitrijden in Z1.")}
+  return P}
+// lichtere variant: ±70%, herhalingen naar beneden afgerond
+function sLight(x){const L=String(x.z||"").split("\n").filter(l=>/×/.test(l)).map(l=>l.replace(/^(\D*?)(\d+) × /,(m,a,n)=>a+Math.max(1,Math.floor(+n*.7))+" × ")),km=x.km?Math.round(x.km*.7*(x.sp==="zwemmen"?10:1))/(x.sp==="zwemmen"?10:1):0;
+  return(L.length?L.join("; ")+". ":"Zelfde training, korter. ")+"Totaal ±"+(km?(x.sp==="zwemmen"?Math.round(km*1000)+" m":String(km).replace(".",",")+" km")+", ":"")+dur(r5((x.min||0)*.7))+" (geschat)."}
+function sWhy(p,d,x,c){const pv=session(p,add(d,-1)),ph=phaseOn(p,d),W=rampWeek(p,wkInfo(p,d).wi),hv=y=>y&&y.k!=="rust"&&(sCat(y)!=="r"||/Lange/.test(y.s||""));
+  const b=c==="lang"||c==="blang"?"Dit is de belangrijkste "+(c==="lang"?"loop":"rit")+" van de week; op deze dag heb je er de meeste tijd voor."
+    :c==="kwal"||c==="fart"||c==="bkwal"||c==="bint"?(pv&&pv.k!=="rust"&&hv(pv)?"Staat ver genoeg van je andere zware training.":"Na een rustige dag ben je fris genoeg voor kwaliteit.")
+    :c==="herstel"?"Na de zware training van gisteren: herstellen zonder nieuwe belasting."
+    :c==="test"?"Een testmoment in een lichtere week, zodat je fris bent en je zones daarna kloppen."
+    :x.sp==="zwemmen"?"Regelmatig zwemmen houdt je techniek en je gevoel voor het water op peil."
+    :"Houdt je trainingsfrequentie op peil zonder zware belasting, tussen de belangrijke trainingen.";
+  return b+(W.tap?" Afbouw: korte prikkel om scherp te blijven, zonder vermoeidheid.":W.rec?" Herstelweek: korter en rustiger dan normaal.":ph&&ph.k==="gewenning"?" Gewenning: kort en rustig.":"")}
+// volledige uitwerking van een dag
+function sxH(p,d,x){if(!x)return"";
+  if(x.k==="rust")return'<details class="sx"><summary>Hersteldoel</summary><p>Je lichaam herstelt en wordt sterker na de trainingen van de vorige dagen. Volledige rust is prima; wil je bewegen, dan mag 20 à 30\' wandelen of heel rustig fietsen. Dat is optioneel: je week is ook "af" zonder.</p></details>';
+  if(x.k==="race")return'<details class="sx"><summary>Wedstrijddag</summary><p>Ontbijt 3 uur voor de start, enkel wat je op trainingen geprobeerd hebt. Warm 10 à 15\' rustig op met een paar korte versnellingen. Start rustiger dan je wil; de eerste kilometers bepalen hoe je eindigt. Gebruik enkel voeding en materiaal die je eerder oefende. Na afloop: drinken, eten en de dagen erna rustig herstellen.</p></details>';
+  const M=sMeta(x),c=M[0],k=sCat(x),P=sParts(x),run=x.sp==="lopen",bike=x.sp==="fietsen",li=a=>a.map(l=>'<li>'+esc(l)+'</li>').join("");
+  const prim=run?(/kwal|fart/.test(c)?"tempo per km; hartslag reageert te traag op korte blokken en is ondersteunend":"hartslag; tempo is ondersteunend")+". Bij warmte, wind, heuvels of vermoeidheid: houd de inspanning gelijk en laat het tempo zakken."
+    :bike?"vermogen (watt); hartslag is ondersteunend. Bij warmte of vermoeidheid: blijf binnen het vermogen en rij rustiger als je hartslag veel hoger is dan normaal."
+    :"tempo per 100 m (CSS); bij vermoeidheid houd je de rusttijden aan en mag het tempo een paar seconden zakken.";
+  const dis=x.km?(x.sp==="zwemmen"?Math.round(x.km*1000)+" m":String(x.km).replace(".",",")+" km"):"";
+  return'<details class="sx"><summary>Volledige uitwerking</summary>'
+   +'<h4>A. Algemeen</h4><p><b>'+esc(M[1])+'</b> · '+esc(SPN2[x.sp]||"")+'. <b>Doel:</b> '+esc(M[2])+' <b>Waarom vandaag:</b> '+esc(sWhy(p,d,x,c))+'</p>'
+   +'<h4>B. Omvang en intensiteit</h4><p>'+(dis?'Afstand '+dis+' (gepland), ':'')+'duur ±'+dur(x.min||0)+' (geschat uit je tempo). <b>Primaire maat:</b> '+esc(prim)+' <b>Ervaren inspanning:</b> '+esc(RPEX[k])+'.</p>'
+   +'<h4>C. Uitvoering</h4><ul class="sxl">'+(P.wu.length?'<li><b>Warming-up:</b> '+esc(P.wu.join(" · "))+'</li>':'')+(P.tech.length?'<li><b>Techniek:</b> '+esc(P.tech.join(" · "))+'</li>':'')+'<li><b>Kern:</b><ul>'+li(P.kern)+'</ul></li>'+(P.cd.length?'<li><b>Cooling-down:</b> '+esc(P.cd.join(" · "))+'</li>':'')+'</ul>'+(x.sp==="zwemmen"?'<p class="note">Afstanden voor een bad van 25 m. "R15"" = vaste rust na elke herhaling.</p>':'')+(P.note.length?'<p class="note">'+esc(P.note.join(" "))+'</p>':'')
+   +'<h4>D. Coaching</h4><ul class="sxl"><li><b>Aanwijzing:</b> '+esc(M[3])+'</li><li><b>Gevoel:</b> '+esc(M[4])+'</li><li><b>Veelgemaakte fout:</b> '+esc(M[5])+'</li><li><b>Stoppen of verkorten:</b> bij pijn die erger wordt tijdens het bewegen, duizeligheid of ziekte (koorts, keelpijn met spierpijn: niet trainen). '+esc(M[6])+'</li><li><b>Lichtere variant:</b> '+esc(sLight(x))+'</li><li><b>Alternatief:</b> '+esc(M[7])+'</li></ul>'
+   +'<h4>E. Terugkoppeling</h4><p>Afstand, tijd, hartslag en vermogen komen uit Garmin. Vul in het logboek je gevoel (1 à 5) en eventuele pijn aan. Een zware week of pijn remt de opbouw van de volgende week af; een lichte week geeft nooit automatisch extra.</p></details>'}
+// optionele kracht en mobiliteit (niet in de weektotalen)
+const KRA={A:["Kracht A (±20')",[["Squat","3 × 10–12"],["Lunges","3 × 8 per been"],["Kuitheffen","3 × 15"],["Plank","3 × 30–40\""],["Bruggetje","3 × 12"]]],B:["Kracht B (±20')",[["Step-ups","3 × 10 per been"],["Deadlift op één been","3 × 8 per been"],["Zijplank","3 × 20–30\" per kant"],["Dead bug","3 × 10"],["Kuitheffen op één been","3 × 10 per been"]]],M:["Mobiliteit (±10')",[["Kat-koe","10 ×"],["Heupopener in uitvalspas","30\" per kant"],["Kuitstretch tegen een muur","30\" per kant"],["Borst openen in een deuropening","30\""]]]};
+function kraH(ph,W){const k=W.tap||W.raced?"":W.rec?"M":"AB";if(!k)return'<p><b>Kracht en mobiliteit (optioneel):</b> deze week geen kracht, enkel rustig bewegen.</p>';
+  const R=k.split("").map(c=>KRA[c]);return'<p><b>Kracht en mobiliteit (optioneel, niet in de totalen):</b> '+(k==="M"?'herstelweek: enkel mobiliteit.':(ph&&ph.k==="spec"?'1 à 2 keer':'2 keer')+' per week, op een dag met een rustige training, niet de dag voor je lange training. Stop 2 à 3 herhalingen voor het niet meer gaat (inspanning 7 op 10), 60 à 90" rust tussen de sets.')+'</p><ul class="sxl">'+R.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1].map(e=>e[0]+" "+e[1]).join(", "))+'</li>').join("")+'</ul>'}
+function wTot(p,w){const o={km:{},min:{},n:0,rest:0,lr:0,lb:0,cat:{r:0,m:0,i:0},key:[],xs:[]};for(let i=0;i<7;i++){const d=add(w,i),x=session(p,d);o.xs.push([d,x]);
+    if(!x||x.k==="rust"){o.rest++;continue}if(x.k==="race"){o.key.push([d,x]);continue}o.n++;o.cat[sCat(x)]++;if(x.km)o.km[x.sp]=(o.km[x.sp]||0)+x.km;o.min[x.sp]=(o.min[x.sp]||0)+(x.min||0);
+    if(x.sp==="lopen"&&/Duurloop|duurloop/.test(x.s))o.lr=Math.max(o.lr,x.km||0);if(x.sp==="fietsen"&&/Lange rit/.test(x.s))o.lb=Math.max(o.lb,x.km||0);
+    const c=sMeta(x)[0];if(/lang|blang|kwal|bkwal|bint|test|fart/.test(c))o.key.push([d,x])}return o}
+const kmF=(sp,v)=>sp==="zwemmen"?Math.round(v*1000)+" m":String(Math.round(v*10)/10).replace(".",",")+" km";
+function weekOv(p,w){const j=wkInfo(p,w).wi;if(j<0)return"";const W=rampWeek(p,j),ph=phaseOn(p,add(w,3)),T=wTot(p,w);
+  // laatste goed verdragen opbouwweek (niet de herstelweek)
+  let B=null,bw=null;for(let q=1;q<=10;q++){const w2=add(w,-7*q),j2=wkInfo(p,w2).wi;if(j2<0)break;const W2=rampWeek(p,j2);if(!W2.rec&&!W2.tap&&!W2.raced&&!W2.fest&&W2.step>0){B=wTot(p,w2);bw=w2;break}}
+  let bi=0;for(let q=0;q<8;q++){const j2=j-q;if(j2<0)break;const W2=rampWeek(p,j2);if(W2.rec||W2.tap||W2.raced)break;bi++}
+  const pos=W.tap?"afbouw (taper)":W.raced?"herstel na je wedstrijd":W.rec?"herstelweek (week 4 van het blok)":"opbouw "+Math.min(3,bi);
+  const goal=W.tap?"Fris worden voor je wedstrijd: minder omvang, korte prikkels op wedstrijdtempo.":W.raced?"Herstellen van je wedstrijd.":W.rec?"De opbouw van de vorige weken laten inwerken.":ph&&ph.k==="gewenning"?"Wennen aan regelmatig trainen.":ph&&ph.k==="spec"?"Wedstrijdspecifiek trainen: tempo, voeding en materiaal zoals op de wedstrijd.":ph&&ph.k==="opbouw"?"Verder ontwikkelen: langere lange trainingen en kwaliteit.":"Rustige omvang en techniek opbouwen.";
+  const sps=["lopen","fietsen","zwemmen"].filter(s=>T.km[s]||(B&&B.km[s]));
+  const cmp=B?sps.map(s=>{const a=T.km[s]||0,b=B.km[s]||0,pc=b?Math.round((a-b)/b*100):0;return SPN2[s]+" "+kmF(s,a)+(b?" ("+(Math.abs(pc)<3?"gelijk":(pc>0?"+":"")+pc+"%")+")":"")}).join(" · "):"";
+  const what=!B?"Eerste week: het schema start vanuit je huidige niveau.":W.tap||W.rec||W.raced?"De belasting daalt ten opzichte van je laatste opbouwweek ("+fmt(bw)+"): "+cmp+". "+(W.tap?"Zo kom je fris aan de start; korte prikkels op wedstrijdtempo blijven.":W.raced?"Je lichaam herstelt van de wedstrijd.":"Zo kan je lichaam de opbouw verwerken. Het volgende blok start weer vanuit die opbouwweek, niet vanuit deze lichte week.")
+    :(()=>{const up=[],eq=[],dn=[];sps.forEach(s=>{const x0=T.km[s]||0,y0=B.km[s]||0,pc=y0?Math.round((x0-y0)/y0*100):100;(pc>=5?up:pc<=-5?dn:eq).push(SPN2[s].toLowerCase()+(Math.abs(pc)>=5&&y0?" "+(pc>0?"+":"")+pc+"%":""))});
+      const det=(T.lr>B.lr+.2?" De lange duurloop gaat van "+kmF("lopen",B.lr)+" naar "+kmF("lopen",T.lr)+".":"")+(T.lb>B.lb+1?" De lange rit gaat van "+kmF("fietsen",B.lb)+" naar "+kmF("fietsen",T.lb)+".":"");
+      const pw=j>0?rampWeek(p,j-1):null,ht=pw&&pw.why?holdTxt(pw):"";
+      return(up.length?"Dit stijgt: "+up.join(", ")+"."+det+" ":"")+(dn.length?"Dit daalt: "+dn.join(", ")+". ":"")+(eq.length?"Gelijk: "+eq.join(", ")+". ":"")
+        +(T.cat.i>B.cat.i?"Er komt een intensieve training bij. ":T.cat.i<B.cat.i?"Er is een intensieve training minder. ":"De intensiteit blijft gelijk. ")+(T.n!==B.n?"Aantal trainingen: "+B.n+" → "+T.n+". ":"")+(ht?ht+" ":"")+"(Vergeleken met je laatste goed verdragen opbouwweek van "+fmt(bw)+".)"})();
+  const tm=Object.values(T.min).reduce((a,b)=>a+b,0),tot=sps.map(s=>SPN2[s]+" "+kmF(s,T.km[s]||0)+" (±"+dur(r5(T.min[s]||0))+")").join(" · ");
+  const keys=T.key.map(([d,x])=>DN[(diff(w,d))]+": "+x.s+(x.k==="race"?"":" ("+sMeta(x)[1].toLowerCase()+")")).join(" · ");
+  const hv=T.xs.filter(([d,x])=>x&&x.k!=="rust"&&(sCat(x)!=="r"||/Lange/.test(x.s))).map(([d])=>diff(w,d)),bb=hv.some((v,i)=>i&&v-hv[i-1]===1);
+  return'<details class="wov"><summary>Weekoverzicht</summary><ul class="sxl">'
+   +'<li><b>Fase:</b> '+esc(ph?ph.n:"Basis")+' · <b>plaats in het blok:</b> '+esc(pos)+'</li><li><b>Hoofddoel:</b> '+esc(goal)+'</li><li><b>Wat verandert:</b> '+esc(what)+'</li>'
+   +'<li><b>Totaal:</b> ±'+dur(r5(tm))+' (geschat) · '+esc(tot)+' · '+T.n+' trainingen, '+T.rest+' rustdag'+(T.rest===1?'':'en')+'</li>'
+   +(keys?'<li><b>Belangrijkste trainingen:</b> '+esc(keys)+'</li>':'')
+   +'<li><b>Intensiteit:</b> '+T.cat.r+' rustig · '+T.cat.m+' matig · '+T.cat.i+' intensief <span class="note">(telmethode: aantal trainingen, ingedeeld volgens hun zwaarste onderdeel)</span></li>'
+   +'<li><b>Herstel:</b> '+(bb?'Er volgen zware dagen op elkaar: eet en drink goed tussenin en slaap voldoende. ':'')+'Doe elke ochtend de ochtendcheck; slaap 7 à 9 uur.</li>'
+   +'<li><b>Doorgaan, herhalen of verminderen:</b> doorgaan als je ochtendcheck meestal groen is, je rustige trainingen echt rustig bleven en je geen pijn hebt. Herhaal deze week als je de lange training niet volledig kon doen of de week zwaar voelde (weekfeedback). Verminder bij 2 of meer rode ochtendchecks, ziekte of pijn die erger wordt: de app houdt dan de opbouw tegen.</li></ul>'
+   +kraH(ph,W)+'</details>'}
 const kmSum=K=>[["lopen","lopen"],["fietsen","fietsen"],["zwemmen","zwemmen"]].filter(([s])=>K[s]).map(([s,n])=>n+" "+(s==="zwemmen"?String(Math.round(K[s]*10)/10).replace(".",",")+" km":kmTxt(K[s]))).join(" · ");
 const sitePlan=p=>!cPlanned(p)&&!CO(p)&&(!p.src||p.src==="site");
 function goalInfo(p){const up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY&&r.t!=="C"&&kindOf(r)).sort((a,b)=>a.d<b.d?-1:1),r=up.find(x=>x.t==="A")||up[0];if(!r)return null;
