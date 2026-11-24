@@ -905,7 +905,7 @@ const STD0={start:{loop:5,kort:4,q:5,blok:25,rit:50,zw:1000},basis:{loop:8,kort:
 const STDP={sprint:{loop:8,kort:6,q:7,blok:30,rit:50,zw:1500},kwart:{loop:14,kort:8,q:9,blok:35,rit:70,zw:2000},tri:{loop:14,kort:8,q:9,blok:35,rit:70,zw:2000},half:{loop:20,kort:10,q:11,blok:45,rit:110,zw:2500},im:{loop:30,kort:12,q:13,blok:50,rit:180,zw:3500},
   k10:{loop:14,kort:8,q:10,blok:25,rit:50,zw:1500},hm:{loop:18,kort:9,q:11,blok:25,rit:50,zw:1500},mar:{loop:32,kort:12,q:14,blok:25,rit:50,zw:1500},alg:{loop:14,kort:8,q:9,blok:35,rit:80,zw:2000}};
 // afbouw: factor per week voor de wedstrijd (1 = de wedstrijdweek)
-const TAPER={im:{1:.4,2:.6,3:.75},half:{1:.45,2:.7},mar:{1:.45,2:.7},kwart:{1:.5},tri:{1:.5},sprint:{1:.5},hm:{1:.5},k10:{1:.5}};
+const TAPER={im:{1:.4,2:.6,3:.75},half:{1:.45,2:.7},mar:{1:.35,2:.45,3:.6},kwart:{1:.5},tri:{1:.5},sprint:{1:.5},hm:{1:.5},k10:{1:.5}};
 const STDK=["loop","kort","q","blok","rit","zw"],STDR={loop:.1,kort:.1,q:.1,blok:.1,rit:.1,zw:.1},STDM={loop:.5,kort:.5,q:.5,blok:2.5,rit:5,zw:100};
 function stdAl(p,c,j,wk,F,H){const P=paceOf(p),m=wk.m,w=wk.w,rec=wk.rec,prv=j>0?c.W[j-1]:null,lv0=NVL(p),G=wk.G;
   // startwaarden: tabel per niveau, of 90% van wat je de laatste weken deed als dat meer is
@@ -925,7 +925,7 @@ function stdAl(p,c,j,wk,F,H){const P=paceOf(p),m=wk.m,w=wk.w,rec=wk.rec,prv=j>0?
   // opbouw: enkel als de vorige week een opbouwweek was (geen rust, geen 'te zwaar', geen rode ochtendchecks)
   const grow=!I.klacht&&!raced&&!rec&&!wk.fest&&!tap&&prv&&(prv.step>0||prv.step===0&&!prv.why)&&j<=jp;
   if(prv&&prv.step<0)STDK.forEach(x=>S[x]*=.9);
-  if(grow){const nb=Math.max(1,F?nBuild(p,j,jp):8),n=prv.step>1?2:1;for(let q=0;q<n;q++)STDK.forEach(x=>{const gap=T[x]-S[x];if(gap<=0)return;
+  if(grow){const nb=Math.max(1,F?nBuild(p,j,Math.max(j,jp-1)):8),n=prv.step>1?2:1;for(let q=0;q<n;q++)STDK.forEach(x=>{const gap=T[x]-S[x];if(gap<=0)return;
     // lange loop: zoals standaardschema's 0,5 à 2 km per opbouwweek, hoogstens 15%; de rest hoogstens 10% per week
     S[x]+=x==="loop"?Math.min(gap,Math.max(.5,Math.min(2,gap/nb,S[x]*.15))):Math.min(gap,S[x]*STDR[x],Math.max(gap/nb,STDM[x]))})}
   const fac=raced?.6:tap?tap:rec?.7:wk.fest?.85:1,v={};STDK.forEach(x=>v[x]=S[x]*fac);
@@ -1087,7 +1087,11 @@ const TPL={RUN:[25,30,30,25,35,35,35,25],SW1:[1200,1500,1700,1200,1800,1800,1800
 const kindOf=r=>RT.find(([re])=>re.test(((r&&r.n)||"")+" "+((r&&r.w)||"")))||null;
 // naar welke wedstrijd werkt week m (A gaat voor B; enkel binnen de voorbereidingsperiode)
 function focusOf(p,m){let best=null;(p.races||[]).filter(r=>r.d&&r.t!=="C"&&r.d>=m).forEach(r=>{const t=kindOf(r);if(!t)return;const sp=RKS[t[3]],wk=Math.ceil(diff(m,r.d)/7);if(wk>prepOf(p,sp))return;
-  const c={r,kind:t[3],name:t[1],sp,run:!!sp.run,wk,pk:Math.floor(diff(p.start,add(r.d,-21))/7)};if(!best||(r.t==="A"&&best.r.t!=="A")||(r.t===best.r.t&&r.d<best.r.d))best=c});return best}
+  const c={r,kind:t[3],name:t[1],sp,run:!!sp.run,wk,pk:Math.floor(diff(p.start,add(r.d,-21))/7)};if(!best||(r.t==="A"&&best.r.t!=="A")||(r.t===best.r.t&&r.d<best.r.d))best=c});
+  // een zwaardere wedstrijd binnen 6 weken na de gekozen: die bepaalt de opbouw
+  if(best){const dem=c=>(c.sp.lrun||0)+(c.sp.lride||0)/2;(p.races||[]).filter(r=>r.d&&r.t!=="C"&&r!==best.r&&r.d>best.r.d&&diff(best.r.d,r.d)<=42&&(r.t==="A"||best.r.t!=="A")).forEach(r=>{const t=kindOf(r);if(!t)return;const sp=RKS[t[3]],wk=Math.ceil(diff(m,r.d)/7);if(wk>prepOf(p,sp))return;
+    const c={r,kind:t[3],name:t[1],sp,run:!!sp.run,wk,pk:Math.floor(diff(p.start,add(r.d,-21))/7),via:best.r};if(dem(c)>dem(best))best=c})}
+  return best}
 const prepOf=(p,sp)=>Math.round(sp.prep*[1.5,1.3,1,1][NIVK.indexOf(NVL(p))]);
 const nBuild=(p,a,b)=>{let n=0;for(let i=a;i<=b;i++){const w=wkInfo(p,add(p.start,7*i)).w;if(w!==3&&w!==7)n++}return n};
 function realism(p){const hs=p.start?histOf(p,athOf(p)):null,lv=Math.max(NIVK.indexOf(NVL(p)),hs&&(hs.lrun>=30||hs.avg>=150)?1:0),out=[];(p.races||[]).filter(r=>r.d&&r.d>=TODAY&&r.t!=="C").forEach(r=>{const t=RT.find(([re])=>re.test((r.n||"")+" "+(r.w||"")));if(!t)return;const need=t[2][lv],wk=Math.floor(diff(TODAY,r.d)/7);if(wk<need)out.push({r,soort:t[1],need,wk})});return out}
@@ -1106,6 +1110,8 @@ function feas(p){if(!p.start)return[];const hs=histOf(p,athOf(p)),lv=Math.max(NI
       alts.push("Dezelfde wedstrijd, maar met uitlopen als doel: rustig ingedeeld, zonder tijdsdoel.");
       if(cap)alts.push("Meer uren per week in de laatste 8 weken voor de wedstrijd, als dat kan.");
       if(SHORTER[kd]&&wk>=12&&!(p.races||[]).some(o=>o!==r&&o.d&&o.d>TODAY&&o.d<r.d))alts.push("Een tussendoel: een "+KNM[SHORTER[kd]]+" rond "+fy(add(TODAY,Math.round(wk/2)*7))+" als C-wedstrijd, om ervaring op te doen.")}
+    {const big=(p.races||[]).find(o=>o!==r&&o.d&&o.t!=="C"&&o.d>r.d&&diff(r.d,o.d)<=42&&kindOf(o)&&(RKS[kindOf(o)[3]].lrun+(RKS[kindOf(o)[3]].lride||0)/2)>(sp.lrun+(sp.lride||0)/2));
+      if(big)f.unshift("Wedstrijd onderweg: "+diff(r.d,big.d)+" dagen later volgt "+(big.n||"een zwaardere wedstrijd")+". Je schema bouwt op naar die wedstrijd; doe deze rustig mee"+(r.t==="A"?", of maak er een B- of C-wedstrijd van":"")+".")}
     out.push({r,t,st,f,alts})});return out}
 function feasH(p){return feas(p).map(x=>'<div class="feas '+(x.st==="haalbaar"?"ok":x.st==="krap"?"tight":"no")+'"><b>'+esc((x.r.n||"Wedstrijd")+(x.r.w?" "+x.r.w:"")+" ("+fy(x.r.d)+"): "+x.st)+'</b>'
   +(x.f.length?'<ul class="sxl">'+x.f.map(l=>'<li>'+esc(l)+'</li>').join("")+'</ul>':'<p>Je niveau, de tijd tot de wedstrijd en je beschikbare uren passen bij deze afstand.</p>')
