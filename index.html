@@ -351,6 +351,27 @@ table.laps{margin:2px 0 14px;font-variant-numeric:tabular-nums}.laps caption{tex
 .adapt .f{margin-top:12px}#a-b{grid-column:span 2}.adone{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:15px}.adone p{flex:1;min-width:220px}
 .day button.lnk{background:none;border:0;padding:2px 0;min-height:0;width:auto;color:var(--ink);font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;box-shadow:none;border-radius:0}
 .othb{display:inline-block;margin-top:8px}
+.cbl{margin-top:12px}
+.bkzt{margin:4px 0 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px}.bkzt summary{cursor:pointer;font-weight:700;font-size:14px}
+.bkzt table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}.bkzt th{text-align:left;width:38px;padding:4px 6px;border-left:6px solid var(--zc)}.bkzt td{padding:4px 6px;border-top:1px solid var(--line)}
+.bkon{margin:8px 0}
+.bks{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x proximity}
+.bk{flex:0 0 210px;scroll-snap-align:start;display:grid;gap:6px;align-content:start;background:var(--card);border:1px solid var(--line);border-top:6px solid var(--zc);border-radius:12px;padding:10px}
+.bkh select{width:100%;min-height:38px;font-weight:700}
+.bkf{display:flex;gap:6px;margin-top:auto;padding-top:4px}.bk .bkf .bkdel{width:auto;padding:0 10px;margin-left:auto;font-size:13px}
+.bk .bkb{flex:none;width:30px;min-height:32px;padding:0;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:8px;font-size:15px}.bk .bkb:disabled{opacity:.3}
+.bk label{display:grid;gap:3px;font-size:12.5px;font-weight:600}.bk input,.bk select{min-height:38px;padding:4px 8px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit;font-weight:400;width:100%;max-width:none}
+.bkrow{display:flex;gap:6px}.bkrow input{flex:1;min-width:0}.bkrow select{flex:none;width:70px}.bku{align-self:center;font-weight:400}
+.bkzv{margin:0;font-size:12.5px;color:var(--mute)}
+.bk .chk{display:flex;align-items:center;gap:8px;font-size:13px}.bk .chk input{width:auto;min-height:0}
+.bkrep{display:grid;gap:6px;padding:8px;border-radius:9px;background:var(--soft)}.bkrep[hidden]{display:none}
+.bkadd{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}.bkadd button{min-height:40px}
+.bkg{display:flex;align-items:flex-end;gap:2px;height:64px;padding:4px;border-radius:10px;background:var(--soft);margin:6px 0}.bkg i{display:block;min-width:3px;border-radius:3px 3px 0 0}
+.blw{margin-top:6px}.bll{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.bll li{display:grid;grid-template-columns:auto 1fr;gap:0 10px;padding:6px 8px 6px 10px;border-left:6px solid var(--zc);border-radius:8px;background:var(--soft);font-size:13.5px}
+.bll .blt{font-weight:700}.bll .bld{font-weight:700;text-align:right}.bll .blz,.bll .blv,.bll .blr{grid-column:1/-1}.bll .blv{color:var(--mute)}.bll .blr{color:var(--mute);font-size:12.5px}
+.blsum{margin:6px 0 0;font-size:13px}
+.hbl{margin-top:10px}.hbl:empty{display:none}
 .hoth{margin-top:10px}.hoth:empty{display:none}
 .hoth button.lnk{background:none;border:0;padding:2px 0;min-height:0;width:auto;color:var(--ink);font-size:14px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;box-shadow:none;border-radius:0}
 .hoth button.lnk.othb{border:1px dashed var(--line);border-radius:10px;padding:8px 14px;text-decoration:none;background:var(--card)}
@@ -603,6 +624,7 @@ p.cmorn{display:block}
           <p class="hlab" id="hlab">Op het plan</p>
           <div class="hsess"><span class="hbig" id="hbig"></span><span class="hdur" id="hdur"></span></div>
         </div>
+        <div class="hbl" id="hbl"></div>
         <div class="hoth" id="hoth"></div>
         <button type="button" class="vt" data-vt="plan" aria-expanded="false" aria-controls="vb-plan"><i class="vchev" aria-hidden="true"></i><span>Trainingsblokken, zones en voeding</span></button>
         <div class="vb" id="vb-plan"><div class="vbi">
@@ -1037,7 +1059,7 @@ function session(p,d){if(CO(p))return null;
   if(d>hz&&!x.adj)return{k:"rust",s:"Nog niet ingepland",t:"",z:p.src==="coachbox"?"Je coach heeft deze dag nog niet ingevuld in Coachbox.":"Je agenda-link toont alleen de komende 14 dagen."};return Object.assign({src:p.src},x)}
 function wkOther(p,d){if(!p||!p.wkx||!Array.isArray(p.wk7))return null;const i=(P(d).getDay()+6)%7;if(p.wk7[i]!=="ander"||wkShow(p)[i]!=="ander")return null;const o=p.wkx[i];return o&&o.n?o:null}
 const othOf=(p,d)=>{const o=p&&p.oth&&p.oth[d];return o&&o.n?o:wkOther(p,d)};
-function session0(p,d){const x=kmify(p,session00(p,d)),y=p.ov&&p.ov[d]?x:tidy(p,x),o=y&&y.k!=="race"?othOf(p,d):null;if(!o)return y;
+function session0(p,d){const x=kmify(p,session00(p,d)),y=p.ov&&p.ov[d]||x&&x.bl&&x.bl.length?x:tidy(p,x),o=y&&y.k!=="race"?othOf(p,d):null;if(!o)return y;
   if(o.z==="zwaar"||y.k==="rust")return{k:"rust",oth:1,s:"Andere sport: "+o.n,t:"",z:o.z==="zwaar"?"Vandaag doe je "+o.n+". Dat is zwaar, dus dat is je training van de dag: de app plant er niets bij.\nNoteer het achteraf in je logboek.":"Vandaag doe je "+o.n+" ("+o.z+"). De app plant er deze keer niets bij."};
   return Object.assign({},y,{z:(y.z||"")+(o.z==="licht"?"\nOok op je planning: "+o.n+" (licht). Dat mag er gewoon bij.":"\nOf in de plaats: "+o.n+" (gemiddeld). Kies zelf wat je vandaag doet.")})}
 function session00(p,d){if(!p.start||d<p.start)return null;if(p.ov&&p.ov[d])return Object.assign({},p.ov[d]);
@@ -1584,7 +1606,7 @@ function zoneChips(p,x,kleur){if(!x||x.k==="rust"||x.k==="race")return[];const Z
   else if(x.sp==="fietsen")c=/sweet|lange blokken/.test(n)?[B(1),B(2),B(3)]:/vo2/.test(n)?[B(1),B(4)]:/piramide/.test(n)?[B(1),B(2),B(3),B(4)]:/tempo/.test(n)?[B(1),B(2)]:/test/.test(n)?[B(3),B(4)]:[B(1)];
   else if(x.sp==="zwemmen")c=/test/.test(n)?[]:[Sw(1),Sw(3)].concat(/lopen/.test(n)?[R(1)]:[]);
   if(kleur==="oranje")c=c.filter(z=>z[0]<=1);return c}
-function hero(){heroX();hothR()}
+function hero(){heroX();hothR();const hb=$("hbl");if(hb){const p=A().p,x=p.start&&sel>=p.start?session(p,sel):null;hb.innerHTML=x&&x.bl&&x.bl.length?blH(p,x):""}}
 function hothR(){const box=$("hoth");if(!box)return;const p=A().p,ext=p.src==="coachbox"||p.src==="ics"||cPlanned(p);if(ext||!p.start||sel<TODAY){box.innerHTML="";return}const x=session(p,sel);box.innerHTML=x&&x.k!=="race"?othH(p,sel):""}
 function heroX(){const a=A(),p=a.p,d=sel,isT=d===TODAY,x=session(p,d),j=isT?judge(p,mState(a,d)):null,L=a.log.filter(l=>l.datum===d);
   $("hero").className="hero "+(j?j.kleur:"");$("hdate").textContent=isT?"Vandaag, "+long(d):long(d).replace(/^./,m=>m.toUpperCase());
@@ -1900,9 +1922,73 @@ document.addEventListener("change",e=>{if(e.target.id!=="cpubx")return;const t=c
 function cSchema(t){const p=t.p,ds=[0,1,2,3,4,5,6].map(i=>add(cW0,i)),wi=p.start?Math.floor(diff(mon(p.start),cW0)/7)+1:0;cPubR(t,ds);
   $("cWk").textContent="Week "+isoWk(cW0)+", "+fmt(cW0)+" tot "+fmt(ds[6]);if(document.activeElement!==$("cNote"))$("cNote").value=(p.cnote&&p.cnote[cW0])||"";
   $("cDays").innerHTML=ds.map((d,i)=>{const c=p.cplan&&p.cplan[d],done=d<=TODAY&&t.log.some(l=>l.datum===d),race=(p.races||[]).find(r=>r.d===d);
-    return'<div class="cday"><span class="k">'+DN[i]+' '+fmt(d)+'</span><div>'+(c?'<b><span class="sd '+(c.k==="rust"?"rest":sk(c.sp))+'"></span>'+esc(c.s)+(tk(c)?' <span class="note" style="font-weight:400">'+esc(tk(c))+'</span>':'')+'</b>'+(c.z?'<em>'+esc(c.z)+'</em>':''):race?'<b><span class="sd run"></span>Wedstrijd: '+esc(race.n||"")+'</b>':'<span class="note">Nog niets ingepland</span>')+(done?'<span class="dn">✓ gedaan</span>':'')+'</div><button type="button" class="ghost" data-ced="'+d+'">'+(cEd===d?"Sluiten":c?"Bewerk":"Plan in")+'</button>'+(cEd===d?cEditor(p,d,c):'')+'</div>'}).join("")}
+    return'<div class="cday"><span class="k">'+DN[i]+' '+fmt(d)+'</span><div>'+(c?'<b><span class="sd '+(c.k==="rust"?"rest":sk(c.sp))+'"></span>'+esc(c.s)+(tk(c)?' <span class="note" style="font-weight:400">'+esc(tk(c))+'</span>':'')+'</b>'+(c.bl&&c.bl.length?blH(p,c):c.z?'<em>'+esc(c.z)+'</em>':''):race?'<b><span class="sd run"></span>Wedstrijd: '+esc(race.n||"")+'</b>':'<span class="note">Nog niets ingepland</span>')+(done?'<span class="dn">✓ gedaan</span>':'')+'</div><button type="button" class="ghost" data-ced="'+d+'">'+(cEd===d?"Sluiten":c?"Bewerk":"Plan in")+'</button>'+(cEd===d?cEditor(p,d,c):'')+'</div>'}).join("")}
 function tplList(p){const Z=zones(p);return[["Duurloop Z2","lopen",45,"Rustig in Z2 ("+Z.run[1][2]+" bpm, "+Z.run[1][3]+"/km), op hartslag."],["Fartlek","lopen",45,"15' rustig, 6 × 1' vlot in Z3 ("+Z.run[2][2]+" bpm) met 2' rustig, uitlopen."],["Lange loop","lopen",75,"Rustig in Z2 ("+Z.run[1][2]+" bpm). Drinken en eten volgens Zones."],["Lange rit Z2","fietsen",120,"Z2 op vermogen ("+Z.bike[1][2]+"), hartslag als controle."],["Fietsblokjes","fietsen",60,"15' inrijden, 3 × 8' Z3 ("+Z.bike[2][2]+") met 4' rustig, uitrijden."],["Zwemmen techniek","zwemmen",45,"Inzwemmen 300 m, 8 × 50 m oefeningen (scull, inhaalslag), 6 × 100 m aan "+mmss(ss(p.css)+8)+", uitzwemmen."],["Zwemmen CSS","zwemmen",50,"Inzwemmen 400 m, 8 × 100 m aan "+p.css+" met 20\" rust, uitzwemmen."],["Kracht","kracht",30,"Romp, squats, lunges en kuitheffen, 3 rondes."],["Rust","rust",0,"Rust of wandelen."]]}
-function cEditor(p,d,c){const T=tplList(p),cur=c?(c.sp||(c.k==="rust"?"rust":"lopen")):"lopen";return'<div class="ced"><div class="chips" role="group" aria-label="Sjablonen">'+T.map((x,i)=>'<button type="button" data-tpl="'+i+'">'+esc(x[0])+'</button>').join("")+'</div><div class="f"><label>Sport<select id="ce-sp">'+["lopen","fietsen","zwemmen","kracht","rust"].map(v=>'<option value="'+v+'"'+(cur===v?" selected":"")+'>'+(v==="rust"?"Rust":SPN[v])+'</option>').join("")+'</select></label><label>Duur (minuten)<input id="ce-min" type="number" min="0" max="480" value="'+(c&&c.min||"")+'"></label><label>Afstand (km)<input id="ce-km" type="number" min="0" max="400" step="0.1" inputmode="decimal" placeholder="bv. 10" value="'+(c&&c.km||"")+'"></label><label class="full">Naam<input id="ce-s" maxlength="40" value="'+esc(c?c.s:"")+'" placeholder="bv. Duurloop Z2"></label><label class="full">Uitleg en zones<textarea id="ce-z" rows="3" maxlength="300">'+esc(c?c.z||"":"")+'</textarea></label></div><div class="row"><button type="button" data-cs="'+d+'">Opslaan</button><button type="button" class="ghost" data-crest="'+d+'">Maak er een rustdag van</button>'+(c?'<button type="button" class="ghost" data-cdel="'+d+'">Wissen</button>':'')+'</div></div>'}
+// ---- blokken ----
+const BKT={wu:"Opwarming",blok:"Blok",rec:"Herstel",cd:"Cooling-down"},BKSP=["lopen","fietsen","zwemmen"];
+const bkSec=s=>{const m=String(s||"").match(/(\d+):(\d\d)/g);if(!m)return 0;const v=m.map(x=>{const[a,b]=x.split(":");return +a*60+ +b});return v.length>1?(v[0]+v[1])/2:(/sneller/.test(s)?v[0]*.96:v[0])};
+function bkZ(p,sp){const Z=zones(p);return sp==="lopen"?Z.run:sp==="fietsen"?Z.bike:Z.swim||[]}
+function bkZt(p,sp,z){const r=bkZ(p,sp)[z-1];if(!r)return"";return sp==="lopen"?(r[2]&&r[2]!=="—"?r[2]+" bpm":"")+(r[3]&&r[3]!=="—"?" · "+r[3]+(/\/km/.test(r[3])?"":"/km"):""):sp==="fietsen"?r[2]+(r[3]&&r[3]!=="—"?" · "+r[3]+" bpm":""):r[2]+"/100 m"}
+// minuten en afstand (km) van één stuk
+function bkLen(p,sp,u,v,z){v=+v||0;if(!v)return{min:0,km:0};const P=paceOf(p);
+  if(sp==="zwemmen"){const s100=bkSec((bkZ(p,sp)[z-1]||[])[2])||ss(p.css||"2:00")+8;return u==="m"?{km:v/1000,min:v/100*s100/60}:{min:v,km:v*60/s100*100/1000}}
+  if(sp==="fietsen"){const kmh=Math.max(15,P.bike||25)*[.85,1,1.08,1.14,1.18][Math.max(0,Math.min(4,z-1))];return u==="km"?{km:v,min:v/kmh*60}:{min:v,km:v/60*kmh}}
+  const spk=bkSec((bkZ(p,sp)[z-1]||[])[3])||(P.easy||6)*60;return u==="km"?{km:v,min:v*spk/60}:{min:v,km:v*60/spk}}
+const bkRest=(b,sp)=>sp==="zwemmen"?(+b.rv||0)/60:(+b.rv||0);   // rust: seconden bij zwemmen, anders minuten
+// onderdelen (voor de tabel, het grafiekje en de totalen)
+function bkParts(p,sp,bl){const out=[];(bl||[]).forEach(b=>{const n=b.t==="blok"&&+b.rep>1?Math.min(50,Math.round(+b.rep)):1,L=bkLen(p,sp,b.u,b.v,+b.z||2);
+  for(let i=0;i<n;i++){out.push({k:b.t,z:+b.z||2,min:L.min,km:L.km});if(i<n-1&&bkRest(b,sp)>0){const R=bkLen(p,sp,"min",bkRest(b,sp),+b.rz||1);out.push({k:"rec",z:+b.rz||1,min:R.min,km:R.km})}}});return out}
+const bkDur=(b,sp)=>b.u==="km"?String(b.v).replace(".",",")+" km":b.u==="m"?b.v+" m":b.v+"'";
+const bkRestS=(b,sp)=>sp==="zwemmen"?b.rv+'"':b.rv+"'";
+function bkTxt(p,sp,bl){const W={lopen:["inlopen","uitlopen"],fietsen:["inrijden","uitrijden"],zwemmen:["inzwemmen","uitzwemmen"]}[sp]||["opwarmen","cooling-down"];
+  return(bl||[]).map(b=>{const z=+b.z||2,zt="Z"+z+" ("+bkZt(p,sp,z)+")";
+    if(b.t==="blok"&&+b.rep>1)return b.rep+" × "+bkDur(b,sp)+" in "+zt+(bkRest(b,sp)>0?", telkens "+bkRestS(b,sp)+" rustig in Z"+(+b.rz||1)+" ("+bkZt(p,sp,+b.rz||1)+")":"");
+    return bkDur(b,sp)+" "+(b.t==="wu"?W[0]+" in ":b.t==="cd"?W[1]+" in ":b.t==="rec"?"rustig in ":"in ")+zt}).join("\n")}
+function bkTot(p,sp,bl){const P=bkParts(p,sp,bl);return{min:Math.round(P.reduce((a,q)=>a+q.min,0)),km:Math.round(P.reduce((a,q)=>a+q.km,0)*(sp==="zwemmen"?20:10))/(sp==="zwemmen"?20:10)}}
+// grafiekje: breedte = tijd, hoogte en kleur = zone
+function bkGraph(p,sp,bl){const P=bkParts(p,sp,bl),T=P.reduce((a,q)=>a+q.min,0)||1;
+  return'<div class="bkg" role="img" aria-label="Opbouw van de training in blokken">'+P.map(q=>'<i style="flex:'+Math.max(.6,q.min/T*100).toFixed(2)+';height:'+(18+q.z*16)+'%;background:'+ZC[q.z-1]+'" title="'+esc((BKT[q.k]||"")+" · "+minD(q.min)+" · Z"+q.z)+'"></i>').join("")+'</div>'}
+// voor de sporter: grafiekje + per blok zijn eigen waarden
+function blH(p,x){const sp=x.sp,bl=x.bl||[];if(!bl.length||BKSP.indexOf(sp)<0)return"";const T=bkTot(p,sp,bl);
+  return'<div class="blw">'+bkGraph(p,sp,bl)+'<ol class="bll">'+bl.map(b=>{const z=+b.z||2,r=bkZ(p,sp)[z-1]||[];
+    return'<li style="--zc:'+ZC[z-1]+'"><span class="blt">'+esc(BKT[b.t]||"Blok")+'</span><span class="bld">'+esc((b.t==="blok"&&+b.rep>1?b.rep+" × ":"")+bkDur(b,sp))+'</span><span class="blz"><b>Z'+z+'</b> '+esc(r[1]||"")+'</span><span class="blv">'+esc(bkZt(p,sp,z))+'</span>'+
+      (b.t==="blok"&&+b.rep>1&&bkRest(b,sp)>0?'<span class="blr">telkens '+esc(bkRestS(b,sp))+' rustig in Z'+(+b.rz||1)+' · '+esc(bkZt(p,sp,+b.rz||1))+'</span>':'')+'</li>'}).join("")+'</ol><p class="note blsum">Totaal ±'+minD(T.min)+' · ±'+(sp==="zwemmen"?Math.round(T.km*1000)+" m":String(T.km).replace(".",",")+" km")+(x.zx?'<br>'+esc(x.zx):'')+'</p></div>'}
+// ---- de editor van de coach ----
+const BKDEF={lopen:[{t:"wu",u:"min",v:15,z:2},{t:"blok",u:"min",v:10,z:3,rep:0,rv:3,rz:1},{t:"cd",u:"min",v:10,z:1}],fietsen:[{t:"wu",u:"min",v:15,z:2},{t:"blok",u:"min",v:10,z:3,rep:0,rv:4,rz:1},{t:"cd",u:"min",v:10,z:1}],zwemmen:[{t:"wu",u:"m",v:300,z:1},{t:"blok",u:"m",v:100,z:3,rep:0,rv:20,rz:1},{t:"cd",u:"m",v:200,z:1}]};
+const TPLB={"Duurloop Z2":[{t:"blok",u:"min",v:45,z:2}],"Fartlek":[{t:"wu",u:"min",v:15,z:2},{t:"blok",u:"min",v:1,z:3,rep:6,rv:2,rz:1},{t:"cd",u:"min",v:10,z:1}],"Lange loop":[{t:"blok",u:"min",v:75,z:2}],"Lange rit Z2":[{t:"blok",u:"min",v:120,z:2}],
+  "Fietsblokjes":[{t:"wu",u:"min",v:15,z:2},{t:"blok",u:"min",v:8,z:3,rep:3,rv:4,rz:1},{t:"cd",u:"min",v:10,z:1}],"Zwemmen techniek":[{t:"wu",u:"m",v:300,z:1},{t:"blok",u:"m",v:100,z:2,rep:6,rv:20,rz:1},{t:"cd",u:"m",v:200,z:1}],"Zwemmen CSS":[{t:"wu",u:"m",v:400,z:1},{t:"blok",u:"m",v:100,z:4,rep:8,rv:20,rz:1},{t:"cd",u:"m",v:200,z:1}]};
+let CBP=null;   // sporter die de coach nu inplant
+function bkCard(p,sp,b,i,n){const Z=bkZ(p,sp),u=sp==="zwemmen"?["m"]:["min","km"],zo=sel=>Z.map((r,k)=>'<option value="'+(k+1)+'"'+(+sel===k+1?" selected":"")+'>Z'+(k+1)+" "+esc(r[1]||"")+'</option>').join(""),rep=b.t==="blok"&&+b.rep>1;
+  return'<div class="bk" data-i="'+i+'" style="--zc:'+ZC[(+b.z||2)-1]+'"><div class="bkh"><select class="bk-t" aria-label="Soort blok">'+Object.keys(BKT).map(k=>'<option value="'+k+'"'+(b.t===k?" selected":"")+'>'+BKT[k]+'</option>').join("")+'</select></div>'+
+    '<label>'+(sp==="zwemmen"?"Afstand":"Duur")+'<span class="bkrow"><input class="bk-v" type="number" min="0" step="'+(sp==="zwemmen"?25:b.u==="km"?0.1:1)+'" inputmode="decimal" value="'+esc(String(b.v??""))+'">'+(u.length>1?'<select class="bk-u" aria-label="Eenheid">'+u.map(x=>'<option value="'+x+'"'+(b.u===x?" selected":"")+'>'+(x==="min"?"min":"km")+'</option>').join("")+'</select>':'<span class="bku">m</span>')+'</span></label>'+
+    '<label>Zone<select class="bk-z">'+zo(b.z||2)+'</select></label><p class="bkzv">'+esc(bkZt(p,sp,+b.z||2))+'</p>'+
+    (b.t==="blok"?'<label class="chk bkrc"><input type="checkbox" class="bk-r"'+(rep?" checked":"")+'> Herhalen</label><div class="bkrep"'+(rep?"":" hidden")+'><label>Aantal keer<input class="bk-n" type="number" min="2" max="50" inputmode="numeric" value="'+(rep?b.rep:4)+'"></label><label>Rust ertussen ('+(sp==="zwemmen"?"sec":"min")+')<input class="bk-rv" type="number" min="0" step="'+(sp==="zwemmen"?5:0.5)+'" inputmode="decimal" value="'+esc(String(b.rv??(sp==="zwemmen"?20:2)))+'"></label><label>Zone rust<select class="bk-rz">'+zo(b.rz||1)+'</select></label><p class="bkzv bkzr">'+esc(bkZt(p,sp,+b.rz||1))+'</p></div>':'')+
+    '<div class="bkf"><button type="button" class="bkb" data-bkm="-1" aria-label="Naar links"'+(i===0?" disabled":"")+'>‹</button><button type="button" class="bkb" data-bkm="1" aria-label="Naar rechts"'+(i===n-1?" disabled":"")+'>›</button><button type="button" class="bkb bkdel" data-bkx="1" aria-label="Blok weghalen">✕ weg</button></div></div>'}
+function bkHTML(p,sp,bl){return'<div class="bks">'+bl.map((b,i)=>bkCard(p,sp,b,i,bl.length)).join("")+'</div><div class="bkadd"><button type="button" class="ghost" data-bka="wu">+ Opwarming</button><button type="button" class="ghost" data-bka="blok">+ Blok</button><button type="button" class="ghost" data-bka="cd">+ Cooling-down</button></div><div class="bkprev" id="ce-prev"></div>'}
+function bkZonesH(p,sp){const Z=bkZ(p,sp);if(!Z.length)return"";return'<details class="bkzt" open><summary>Zones van '+esc(p.naam||"je sporter")+' ('+esc(SPN[sp]||sp)+')</summary><table><tbody>'+Z.slice(0,5).map((r,k)=>'<tr style="--zc:'+ZC[k]+'"><th>Z'+(k+1)+'</th><td>'+esc(r[1]||"")+'</td><td>'+esc(bkZt(p,sp,k+1))+'</td></tr>').join("")+'</tbody></table></details>'}
+function cblH(p,sp,c){if(BKSP.indexOf(sp)<0)return"";const on=c?!!(c.bl&&c.bl.length):true,bl=c&&c.bl&&c.bl.length&&c.sp===sp?c.bl:BKDEF[sp];
+  return bkZonesH(p,sp)+'<label class="chk bkon"><input type="checkbox" id="ce-blon"'+(on?" checked":"")+'> Opbouw in blokken (duur, afstand en uitleg worden automatisch ingevuld)</label><div id="ce-bls"'+(on?"":" hidden")+'>'+bkHTML(p,sp,bl)+'</div>'}
+function cblRead(){const W=$("ce-bls");if(!W)return[];return[...W.querySelectorAll(".bk")].map(k=>{const q=s=>k.querySelector(s),num=s=>{const e=q(s);return e?+String(e.value).replace(",",".")||0:0};const b={t:q(".bk-t").value,u:q(".bk-u")?q(".bk-u").value:"m",v:num(".bk-v"),z:+q(".bk-z").value};
+  if(b.t==="blok"&&q(".bk-r")&&q(".bk-r").checked){b.rep=Math.max(2,Math.min(50,Math.round(num(".bk-n"))||2));b.rv=num(".bk-rv");b.rz=+q(".bk-rz").value}return b})}
+function cblOn(){const sp=$("ce-sp")&&$("ce-sp").value,o=$("ce-blon");return BKSP.indexOf(sp)>=0&&o&&o.checked}
+function cblSync(re){const p=CBP;if(!p||!$("ce-sp"))return;const sp=$("ce-sp").value,on=cblOn(),W=$("ce-bls");$("ce-min").readOnly=on;$("ce-km").readOnly=on;
+  const zl=$("ce-zl");if(zl)zl.textContent=on?"Extra uitleg voor je sporter (mag leeg)":"Uitleg en zones";if(!W||!on){const pv=$("ce-prev");if(pv)pv.innerHTML="";return}
+  let bl=cblRead();if(re){W.innerHTML=bkHTML(p,sp,bl)}
+  W.querySelectorAll(".bk").forEach((k,i)=>{const b=bl[i];if(!b)return;k.style.setProperty("--zc",ZC[b.z-1]);const v=k.querySelector(".bkzv");if(v)v.textContent=bkZt(p,sp,b.z);const r=k.querySelector(".bk-r"),rp=k.querySelector(".bkrep");if(r&&rp){rp.hidden=!r.checked;const zr=k.querySelector(".bkzr");if(zr)zr.textContent=bkZt(p,sp,+k.querySelector(".bk-rz").value)}});
+  const T=bkTot(p,sp,bl);$("ce-min").value=T.min||"";$("ce-km").value=sp==="zwemmen"?(T.km||""):(T.km||"");
+  const pv=$("ce-prev");if(pv)pv.innerHTML=bl.length?bkGraph(p,sp,bl)+'<p class="note">Totaal ±'+minD(T.min)+' · ±'+(sp==="zwemmen"?Math.round(T.km*1000)+" m":String(T.km).replace(".",",")+" km")+'. Zo ziet je sporter het, met zijn eigen zones.</p>':'<p class="note">Voeg een blok toe.</p>'}
+function cblOut(p,sp,extra){if(!cblOn())return null;const bl=cblRead().filter(b=>b.v>0);if(!bl.length)return null;const T=bkTot(p,sp,bl),tx=bkTxt(p,sp,bl);return{bl,min:T.min,km:T.km,z:tx+(extra?"\n"+extra:""),zx:extra||""}}
+// knoppen en velden van de blokken
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#ce-bls [data-bka],#ce-bls [data-bkm],#ce-bls [data-bkx]");if(!b||!CBP)return;const sp=$("ce-sp").value;let bl=cblRead();
+  if(b.dataset.bka){const t=b.dataset.bka,d=(BKDEF[sp]||BKDEF.lopen).find(x=>x.t===t)||{t,u:sp==="zwemmen"?"m":"min",v:10,z:2};const nb=Object.assign({},d);if(t==="cd")bl.push(nb);else if(t==="wu")bl.unshift(nb);else{const ci=bl.findIndex(x=>x.t==="cd");bl.splice(ci<0?bl.length:ci,0,nb)}}
+  else{const i=+b.closest(".bk").dataset.i;if(b.dataset.bkx)bl.splice(i,1);else{const j=i+ +b.dataset.bkm;if(j>=0&&j<bl.length){const x=bl[i];bl[i]=bl[j];bl[j]=x}}}
+  $("ce-bls").innerHTML=bkHTML(CBP,sp,bl);cblSync()});
+document.addEventListener("input",e=>{if(e.target.closest&&e.target.closest("#ce-bls"))cblSync()});
+document.addEventListener("change",e=>{const t=e.target;if(!t||!t.closest)return;
+  if(t.closest("#ce-bls")){cblSync(t.classList.contains("bk-t")||t.classList.contains("bk-u"));return}
+  if(t.id==="ce-blon"){const W=$("ce-bls");if(W)W.hidden=!t.checked;cblSync();return}
+  if(t.id==="ce-sp"&&CBP){const w=$("ce-blw");if(w){w.innerHTML=cblH(CBP,t.value,null);cblSync()}}});
+function cEditor(p,d,c){CBP=p;setTimeout(()=>cblSync(),0);const T=tplList(p),cur=c?(c.sp||(c.k==="rust"?"rust":"lopen")):"lopen";return'<div class="ced"><div class="chips" role="group" aria-label="Sjablonen">'+T.map((x,i)=>'<button type="button" data-tpl="'+i+'">'+esc(x[0])+'</button>').join("")+'</div><div class="f"><label>Sport<select id="ce-sp">'+["lopen","fietsen","zwemmen","kracht","rust"].map(v=>'<option value="'+v+'"'+(cur===v?" selected":"")+'>'+(v==="rust"?"Rust":SPN[v])+'</option>').join("")+'</select></label><label>Duur (minuten)<input id="ce-min" type="number" min="0" max="480" value="'+(c&&c.min||"")+'"></label><label>Afstand (km)<input id="ce-km" type="number" min="0" max="400" step="0.1" inputmode="decimal" placeholder="bv. 10" value="'+(c&&c.km||"")+'"></label><label class="full">Naam<input id="ce-s" maxlength="40" value="'+esc(c?c.s:"")+'" placeholder="bv. Duurloop Z2"></label><label class="full"><span id="ce-zl">Uitleg en zones</span><textarea id="ce-z" rows="3" maxlength="300">'+esc(c?(c.bl&&c.bl.length?c.zx||"":c.z||""):"")+'</textarea></label></div><div class="cbl" id="ce-blw">'+cblH(p,cur,c)+'</div><div class="row"><button type="button" data-cs="'+d+'">Opslaan</button><button type="button" class="ghost" data-crest="'+d+'">Maak er een rustdag van</button>'+(c?'<button type="button" class="ghost" data-cdel="'+d+'">Wissen</button>':'')+'</div></div>'}
 function cTrain(t){const L=[...t.log].filter(l=>l.datum<=TODAY).sort((a,b)=>(a.datum+(a.t||""))<(b.datum+(b.t||""))?1:-1).slice(0,10);
   $("cTrain").innerHTML=L.length?'<p class="note" style="margin-bottom:6px">Klik op een training voor de volledige analyse.</p>'+L.map(l=>{const r=analyse(t.p,l),f=(t.check||{})[l.datum]||{};return'<details class="cday ctr"><summary><span class="k">'+DN[(P(l.datum).getDay()+6)%7]+' '+fmt(l.datum)+'</span><div><b><span class="sd '+sk(l.sport)+'"></span>'+esc(r.title)+'</b><em>'+esc(r.chips.join(", "))+'</em>'+(l.g?'<em>Uit '+(l.g==="wahoo"?"Wahoo":l.g==="fit"?"een .fit-bestand":"Garmin")+(l.t?", gestart om "+l.t:'')+'</em>':'')+(f.en||f.sp?'<em>Gevoel: energie '+(f.en||"–")+'/5, spierpijn '+(f.sp||"–")+'/5</em>':'')+'</div><span class="tag '+tagC(r.o)+'">'+esc(r.tag)+'</span></summary><div class="block ana" data-o="'+r.o+'">'+anaHTML(t.p,l,{coach:true})+'</div></details>'}).join(""):'<p class="note">Nog geen trainingen.</p>'}
 function cMsgs(t){const p=t.p,L=p.cmsg||[];p.cread=Date.now();LS.set(creadKey(t.id),p.cread);$("cMsgs").innerHTML=L.length?L.map(m=>{const me=m.by==="c",d=new Date(m.ts);return'<div class="m'+(me?" me":"")+'">'+av(me?S.act:t.id)+'<div class="bub"><p class="mh">'+(me?"":'<b>'+esc(short(t.naam))+'</b>')+relD(iso(d))+' '+d.toLocaleTimeString("nl-BE",{hour:"2-digit",minute:"2-digit"})+'</p><p class="mt">'+esc(m.t)+'</p></div></div>'}).join(""):'<p class="note" style="margin:auto;text-align:center">Nog geen berichten.</p>';$("cMsgs").scrollTop=$("cMsgs").scrollHeight}
@@ -2015,7 +2101,7 @@ function plan(){const a=A(),p=a.p,cp=cPlanned(p),ext=p.src==="coachbox"||p.src==
   const lo=s0<w0?s0:w0;if(!PW||PW<lo||PW>last)PW=mon(TODAY)<lo?lo:mon(TODAY)>last?last:mon(TODAY);
   for(let w=PW;w===PW;w=add(w,7),n++){const end=add(w,6),now=TODAY>=w&&TODAY<=end,ph=phaseOn(p,add(w,3)),wi=Math.floor(diff(s0,w)/7)+1;let tot=0;const KM={};
     const ds=DN.map((dn,i)=>{const dd=add(w,i),x=session(p,dd),f=fuel(p,x,dd),done=dd<=TODAY&&a.log.some(l=>l.datum===dd);if(x&&x.min&&x.k!=="rust")tot+=x.min;if(x&&x.km&&x.k!=="rust"&&x.k!=="race")KM[x.sp]=(KM[x.sp]||0)+x.km;
-      return'<div class="day'+(dd===TODAY?" is":"")+(x&&x.k==="race"?" race":"")+'"><span class="k">'+dn+' '+fmt(dd)+'</span><b><span class="sd '+(!x||x.k==="rust"?"rest":sk(x.sp))+'"></span>'+esc(x?x.s:"—")+'</b>'+(x&&tk(x)?'<span>'+esc(tk(x))+'</span>':'')+(x&&x.z?'<em>'+esc(x.z)+'</em>':'')+(f&&f.mee?'<span class="fl">Voeding: '+f.c[0]+' koolhydraten · '+f.n[0]+' natrium · '+f.d[1]+'</span>':'')+(x&&x.adj?'<span class="adjl">Aangepast op jouw vraag</span>':'')+(done?'<span class="dn">✓ gedaan</span>':'')+(!ext&&x?sxH(p,dd,x):'')+(x?sfbH(p,dd,x):'')+(!ext&&dd>=TODAY&&x&&x.k!=="race"?othH(p,dd):'')+'</div>'}).join("");
+      return'<div class="day'+(dd===TODAY?" is":"")+(x&&x.k==="race"?" race":"")+'"><span class="k">'+dn+' '+fmt(dd)+'</span><b><span class="sd '+(!x||x.k==="rust"?"rest":sk(x.sp))+'"></span>'+esc(x?x.s:"—")+'</b>'+(x&&tk(x)?'<span>'+esc(tk(x))+'</span>':'')+(x&&x.bl&&x.bl.length?blH(p,x):x&&x.z?'<em>'+esc(x.z)+'</em>':'')+(f&&f.mee?'<span class="fl">Voeding: '+f.c[0]+' koolhydraten · '+f.n[0]+' natrium · '+f.d[1]+'</span>':'')+(x&&x.adj?'<span class="adjl">Aangepast op jouw vraag</span>':'')+(done?'<span class="dn">✓ gedaan</span>':'')+(!ext&&x?sxH(p,dd,x):'')+(x?sfbH(p,dd,x):'')+(!ext&&dd>=TODAY&&x&&x.k!=="race"?othH(p,dd):'')+'</div>'}).join("");
     h+='<article class="week'+(now?" now":"")+'"><div class="pwnav"><button type="button" class="wnav2" data-pw="-7" aria-label="Vorige week"'+(w<=lo?' disabled':'')+'>‹</button><h3>Week '+isoWk(w)+' <small>'+fmt(w)+' tot '+fmt(end)+(ph?', '+esc(ph.n.toLowerCase()):'')+(kmSum(KM)?', '+kmSum(KM):(tot?', '+dur(tot):''))+'</small></h3><button type="button" class="wnav2" data-pw="7" aria-label="Volgende week"'+(w>=last?' disabled':'')+'>›</button></div>'+(now?'':'<p class="pwback"><button type="button" class="lnk" data-pw="0">Naar deze week</button></p>')+'<p class="note" style="margin-top:4px">'+esc(weekFocus(p,w))+'</p>'+(!ext?weekOv(p,w):'')+'<div class="days">'+ds+'</div></article>'}
   $("weeks").innerHTML=h||'<p class="note">Nog geen weken in je plan.</p>';$("pmore").hidden=true}
 /* ---------- exacte onderdelen per training ---------- */
@@ -2065,6 +2151,7 @@ function swimParse(p,x){const c=ss(p.css||"2:00"),P=paceOf(p),L=String(x.z||"").
   return pr}
 // ontleed een training; ok = optelsom bruikbaar
 function sParse(p,x){if(!x||!x.z||x.k==="rust"||x.k==="race")return null;
+  if(Array.isArray(x.bl)&&x.bl.length&&BKSP.indexOf(x.sp)>=0){const P=bkParts(p,x.sp,x.bl),K={wu:"wu",blok:"kern",rec:"rec",cd:"cd"},pr=P.map(q=>({k:K[q.k]||"kern",km:q.km,min:q.min,t:(BKT[q.k]||"")+" in Z"+q.z+" ("+bkZt(p,x.sp,q.z)+")"}));if(x.zx)pr.push({k:"note",t:x.zx});return{ok:true,km:P.reduce((a,q)=>a+q.km,0),min:P.reduce((a,q)=>a+q.min,0),pr,ex:[]}}
   {const XN=/^(Ook op je planning:|Of in de plaats:|Verplaatst van )/,L=String(x.z).split("\n");if(L.some(l=>XN.test(l))){const R=sParse(p,Object.assign({},x,{z:L.filter(l=>!XN.test(l)).join("\n")}));if(R)L.filter(l=>XN.test(l)).forEach(l=>R.pr.push({k:"note",t:l}));return R}}let pr;try{pr=x.sp==="lopen"?runParse(p,x):x.sp==="fietsen"?bikeParse(p,x):x.sp==="zwemmen"?swimParse(p,x):null}catch(e){return null}if(!pr)return null;
   const main=pr.filter(q=>q.k!=="note"&&q.k!=="extra"),km=main.reduce((a,q)=>a+(q.km||0),0),mn=main.reduce((a,q)=>a+(q.min||0),0),ex=pr.filter(q=>q.k==="extra");
   return{pr,km,min:mn,ex,ok:main.length>0&&km>0&&(!x.km||km>=x.km*.5&&km<=x.km*1.8)}}
@@ -2691,9 +2778,11 @@ $("v-coach").addEventListener("click",e=>{const b=e.target.closest("button");if(
   if(d.ca==="copy"){wk.forEach(x=>{const c=p.cplan[add(x,-7)];if(c)p.cplan[x]=Object.assign({},c);else delete p.cplan[x]});return cDone(t,"Vorige week is gekopieerd naar deze week.")}
   if(d.ca==="clear"){wk.forEach(x=>delete p.cplan[x]);return cDone(t,"De week is leeggemaakt.")}
   if(d.ced){cEd=cEd===d.ced?null:d.ced;coachR();return}
-  if(d.tpl){const x=tplList(p)[+d.tpl];if(!x)return;$("ce-sp").value=x[1];$("ce-min").value=x[2]||"";$("ce-km").value="";$("ce-s").value=x[0];$("ce-z").value=x[3];return}
+  if(d.tpl){const x=tplList(p)[+d.tpl];if(!x)return;$("ce-sp").value=x[1];$("ce-min").value=x[2]||"";$("ce-km").value="";$("ce-s").value=x[0];$("ce-z").value=x[3];
+    const w=$("ce-blw");if(w){const B=TPLB[x[0]];w.innerHTML=cblH(p,x[1],B?{sp:x[1],bl:B}:{sp:x[1],bl:[]});if(B)$("ce-z").value="";cblSync()}return}
   if(d.cs){const sp=$("ce-sp").value,mn=Math.max(0,Math.min(480,Math.round(+$("ce-min").value||0))),km=Math.max(0,Math.min(400,Math.round((+String($("ce-km").value).replace(",",".")||0)*10)/10)),nm=$("ce-s").value.trim()||(sp==="rust"?"Rust":SPN[sp]),z=$("ce-z").value.trim();
-    p.cplan[d.cs]=sp==="rust"?{k:"rust",s:nm,t:"",z}:Object.assign({k:CK(sp,nm),sp,s:nm,t:mn?dur(mn):"",min:mn,z},km?{km}:{});cEd=null;return cDone(t,"Opgeslagen. "+(t.self?"Je ziet het meteen bij Vandaag en Plan.":"Je sporter ziet het meteen."))}
+    const B=sp==="rust"?null:cblOut(p,sp,z);
+    p.cplan[d.cs]=sp==="rust"?{k:"rust",s:nm,t:"",z}:B?{k:CK(sp,nm),sp,s:nm,t:dur(B.min),min:B.min,km:B.km,z:B.z,zx:B.zx,bl:B.bl}:Object.assign({k:CK(sp,nm),sp,s:nm,t:mn?dur(mn):"",min:mn,z},km?{km}:{});cEd=null;return cDone(t,"Opgeslagen. "+(t.self?"Je ziet het meteen bij Vandaag en Plan.":"Je sporter ziet het meteen."))}
   if(d.crest){p.cplan[d.crest]={k:"rust",s:"Rust",t:"",z:"Rust of wandelen."};cEd=null;return cDone(t,"Rustdag ingepland.")}
   if(d.cdel){delete p.cplan[d.cdel];cEd=null;return cDone(t,"Dag gewist.")}});
 $("cNote").addEventListener("change",()=>{const t=cSel?cFind(cSel):null;if(!t)return;t.p.cnote=t.p.cnote||{};const v=$("cNote").value.trim();if(v)t.p.cnote[cW0]=v;else delete t.p.cnote[cW0];cDone(t,"Boodschap bewaard.")});
