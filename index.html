@@ -685,7 +685,7 @@ p.cmorn{display:block}
           <p style="margin-top:10px"><b>Altijd:</b> je naam, je berichten en voor welke clubactiviteiten je inschrijft.</p>
           <p style="margin-top:8px"><b>Alleen als je het aanzet:</b> je weektotalen (tijd en km), je records en je wedstrijden.</p>
           <p style="margin-top:8px"><b>Nooit:</b> je zones, je plan, je trainingen, hartslag, vermogen, ochtendcheck, slaap en HRV.</p><p style="margin-top:8px"><b>Je coach:</b> heb je een coach, dan ziet alleen hij je schema, trainingen, zones en ochtendcheck.</p>
-          <p style="margin-top:12px"><a class="lnk" href="#instellingen">Delen aan- of uitzetten</a></p>
+          <p style="margin-top:12px"><a class="lnk" href="#instellingen/club">Delen aan- of uitzetten</a></p>
         </div>
       </div>
     </div>
@@ -793,7 +793,7 @@ p.cmorn{display:block}
       <p class="note" style="margin-top:8px">Kramp? Check eerst: genoeg gedronken en gegeten, tempo niet te hoog. Dan extra natrium, extra koolhydraten, trager, en rekken.</p>
     </div>
   </div>
-  <p class="note" style="margin-top:26px">Klopt er iets niet meer na een nieuwe test? Pas je drempels aan bij <a class="lnk" href="#instellingen">Instellingen</a>; alle tabellen rekenen mee.</p>
+  <p class="note" style="margin-top:26px">Klopt er iets niet meer na een nieuwe test? Pas je drempels aan bij <a class="lnk" href="#instellingen/zones">Instellingen</a>; alle tabellen rekenen mee.</p>
 </section>
 <section id="v-materiaal" hidden>
   <h2 class="sh">Materiaal</h2>
@@ -916,6 +916,7 @@ function stdAl(p,c,j,wk,F,H){const P=paceOf(p),m=wk.m,w=wk.w,rec=wk.rec,prv=j>0?
     if(!(I.lo&&I.lo.lang)&&G.lfloor)b.loop=Math.max(b.loop,G.lfloor*60/P.easy);if(!(I.fi&&I.fi.lang)&&G.rfloor)b.rit=Math.max(b.rit,G.rfloor/60*P.bike);if(!(I.zw&&I.zw.lang)&&G.sfloor)b.zw=Math.max(b.zw,G.sfloor);c.S2=b}
   if(!c.S2){const b=Object.assign({},STD0[lv0]||STD0.goed);if(G.lfloor)b.loop=Math.max(b.loop,G.lfloor*60/P.easy);if(G.rfloor)b.rit=Math.max(b.rit,G.rfloor/60*P.bike);if(G.sfloor)b.zw=Math.max(b.zw,G.sfloor);c.S2=b}
   const S=c.S2,kind=F?F.kind:"alg",T0=STDP[kind]||STDP.alg,T={};STDK.forEach(x=>T[x]=Math.max(T0[x],(STD0[lv0]||STD0.goed)[x]));
+  if(F&&F.run&&p.sports.fi&&(p.races||[]).some(r=>r.d&&r.t!=="C"&&r.d>F.r.d&&diff(F.r.d,r.d)<=182&&/^(im|half|kwart|tri)$/.test((kindOf(r)||[])[3]||""))){T.blok=Math.max(T.blok,45);T.rit=Math.max(T.rit,80)}
   const tl=F?Object.keys(TAPER[kind]||{}).length:0,tap=F&&F.wk<=tl?TAPER[kind][F.wk]:0,jp=F?j+Math.max(0,F.wk-tl-1):j+52;
   // net na een wedstrijd (A of B): herstelweek en daarna verder vanaf 80%
   const raced=(p.races||[]).some(r=>r.d&&r.t!=="C"&&r.d<m&&r.d>=add(m,-7));
@@ -929,7 +930,7 @@ function stdAl(p,c,j,wk,F,H){const P=paceOf(p),m=wk.m,w=wk.w,rec=wk.rec,prv=j>0?
     // lange loop: zoals standaardschema's 0,5 à 2 km per opbouwweek, hoogstens 15%; de rest hoogstens 10% per week
     S[x]+=x==="loop"?Math.min(gap,Math.max(.5,Math.min(2,gap/nb,S[x]*.15))):Math.min(gap,S[x]*STDR[x],Math.max(gap/nb,STDM[x]))})}
   const fac=raced?.6:tap?tap:rec?.7:wk.fest?.85:1,v={};STDK.forEach(x=>v[x]=S[x]*fac);
-  const run=!!(F&&F.run),lw=wk.lv;let z2run=run&&!G.rw&&lw!=="start",z2=z2run?v.kort:0;
+  const run=!!(F&&F.run),lw=wk.lv,combo=run&&p.sports.fi&&(p.races||[]).some(r=>r.d&&r.t!=="C"&&r.d>F.r.d&&diff(F.r.d,r.d)<=182&&/^(im|half|kwart|tri)$/.test((kindOf(r)||[])[3]||""));let z2run=run&&!combo&&!G.rw&&lw!=="start",z2=z2run?v.kort:0;
   // loopvolume per week hoogstens 15% meer dan de laatste opbouwweek (Göran): eerst de 4e loop kleiner, dan de korte loop en de kwaliteitsloop
   const rkm=()=>v.loop+v.kort+(run?v.q+z2:0);let pb=0;for(let q=j-1;q>=0;q--){const W1=c.W[q];if(W1.rk&&!W1.rec&&!W1.fest&&!W1.tap&&!W1.raced){pb=W1.rk;break}}
   // rustweek, afbouw of feestdagen: de 4e loop enkel als hij er de laatste opbouwweek ook was
@@ -937,15 +938,15 @@ function stdAl(p,c,j,wk,F,H){const P=paceOf(p),m=wk.m,w=wk.w,rec=wk.rec,prv=j>0?
   if(pb&&!rec&&!tap&&!raced&&!wk.fest){let over=rkm()-Math.max(pb*1.15,pb+2);
     if(over>0&&z2){const cut=Math.min(over,z2);z2-=cut;over-=cut;if(z2<3){z2=0;z2run=false}}
     if(over>0){const kq=v.kort+(run?v.q:0),f2=Math.max(.5,(kq-over)/kq);v.kort*=f2;if(run)v.q*=f2}}
-  wk.rk=rkm();wk.tap=!!tap;wk.raced=raced;wk.z2=z2run;
+  wk.rk=rkm();wk.tap=!!tap;wk.raced=raced;wk.z2=z2run;wk.notest=!!tap||!!raced;
   // naar minuten (lopen, fietsen) en meters (zwemmen) voor de dagtrainingen
   const act=k0=>p.days[k0]!==""&&p.days[k0]!=null,r100=x=>Math.max(400,Math.round(x/100)*100),rm=km=>Math.max(20,r5(km*P.easy/60)),bm=km=>r5(km/Math.max(15,P.bike)*60);
   const al={loop:rm(v.loop),kort:rm(v.kort),zwem1:r100(v.zw)};
-  if(run){al.blok=rm(v.q);al.rit=act("rit")&&p.sports.fi?Math.max(LRM(p),bm(v.rit)):0;al.zwem2=z2run?rm(z2):r100(v.zw*.85);al.z2run=z2run;al.noq=rec||raced||!!tap&&F.wk<=1||!(G.tempo&&p.intens.lo)}
+  if(run){al.blok=rm(v.q);al.rit=act("rit")&&p.sports.fi?Math.max(LRM(p),bm(v.rit)):0;al.zwem2=z2run?rm(z2):combo?0:r100(v.zw*.85);al.z2run=z2run;if(combo){al.combo=true;al.fb=act("zwem2")?Math.max(BMIN,bm(v.blok)):0;if(al.rit)al.rit=Math.max(al.rit,bm(v.rit))}al.noq=rec||raced||!!tap&&F.wk<=1||!(G.tempo&&p.intens.lo)}
   else{al.blok=Math.max(BMIN,bm(v.blok));al.rit=Math.max(gew?BMIN:LRM(p),bm(v.rit));al.zwem2=r100(v.zw*.85)}
   // je beschikbare uren zijn de grens: eerst de kortere trainingen inkorten, dan de rit midweek laten vallen, dan alles iets korter
   const sw=x=>x/100*(ss(p.css||"2:00")+12)/60,on=(k0,sp)=>act(k0)&&p.sports[sp],
-    mins=()=>(on("loop","lo")?al.loop:0)+(on("kort","lo")?al.kort:0)+(on("blok",run?"lo":"fi")?al.blok:0)+(on("rit","fi")?al.rit:0)+(on("zwem1","zw")?sw(al.zwem1):0)+(on("zwem2",z2run?"lo":"zw")?(z2run?al.zwem2:sw(al.zwem2)):0);
+    mins=()=>(on("loop","lo")?al.loop:0)+(on("kort","lo")?al.kort:0)+(on("blok",run?"lo":"fi")?al.blok:0)+(on("rit","fi")?al.rit:0)+(on("zwem1","zw")?sw(al.zwem1):0)+(on("zwem2",z2run?"lo":"zw")?(z2run?al.zwem2:sw(al.zwem2)):0)+(al.combo&&act("zwem2")?al.fb||0:0);
   let bskip=false,cap=false;const lim=H;
   if(mins()>lim){cap=true;al.kort=Math.max(20,r5(al.kort*.75));if(!z2run)al.zwem2=Math.max(800,Math.round(al.zwem2*.75/100)*100);if(!run)al.blok=BMIN}
   if(mins()>lim&&!rec&&!run&&on("blok","fi")&&on("rit","fi")){bskip="blok";al.blok=0}
@@ -987,12 +988,14 @@ function session0(p,d){const x=kmify(p,session00(p,d));return p.ov&&p.ov[d]?x:ti
 function session00(p,d){if(!p.start||d<p.start)return null;if(p.ov&&p.ov[d])return Object.assign({},p.ov[d]);
   const R=(p.races||[]).filter(r=>r.d),r=R.find(x=>x.d===d);
   if(r){const n=r.n||"Wedstrijd",sp=/marathon|loop|run|km|trail|cross/i.test(n)?"lopen":/fiets|tijdrit|fondo|cyclo/i.test(n)?"fietsen":/zwem/i.test(n)?"zwemmen":"triatlon";return{k:"race",sp,s:"Wedstrijd: "+n+(r.w?", "+r.w:""),t:"",z:"Succes! Start rustig en volg je wedstrijdplan. Voeding en pre-loading staan bij Zones."}}
-  if(R.find(x=>x.t!=="C"&&x.d===add(d,1)))return{k:"run",sp:"lopen",s:"Losjes lopen",t:"rustig",min:20,z:"Heel rustig\nOp het einde 3 × 15\" versnellingen\nSpullen klaarleggen en vroeg slapen."};
+  const nx=R.find(x=>x.t!=="C"&&x.d===add(d,1));
+  if(nx&&p.sports.fi&&!/marathon|loop|run|km|trail|cross|fiets|tijdrit|fondo|cyclo|zwem/i.test(nx.n||""))return{k:"run",sp:"fietsen",s:"Openers: fietsen + loopje",t:"30' + 10'",min:40,z:"30' rustig fietsen, "+W(p,.56,.68)+", met 3 × 1' op wedstrijdvermogen ("+(function(){const k=(kindOf(nx)||[])[3]||"",r={sprint:[.88,.95],kwart:[.83,.88],tri:[.83,.88],half:[.75,.8],im:[.65,.72]}[k]||[.8,.88];return W(p,r[0],r[1])})()+")\nDaarna meteen 10' losjes lopen met 3 × 15\" versnellingen\nFiets nakijken, spullen klaarleggen en vroeg slapen."};
+  if(nx)return{k:"run",sp:"lopen",s:"Losjes lopen",t:"rustig",min:20,z:"Heel rustig\nOp het einde 3 × 15\" versnellingen\nSpullen klaarleggen en vroeg slapen."};
   const pc=R.find(x=>x.t==="C"&&diff(x.d,d)===1);if(pc)return{k:"rust",s:"Rust",t:"",z:"Herstel na "+(pc.n||"je wedstrijd")+": wandelen of heel rustig fietsen, goed eten en slapen."};
   const pr=R.find(x=>x.t!=="C"&&diff(x.d,d)>=1&&diff(x.d,d)<=3);if(pr)return{k:"rust",s:"Rust",t:"",z:"Herstel na "+(pr.n||"je wedstrijd")+": wandelen, goed eten en slapen."};
   const ph=phaseOn(p,d),soon=R.some(x=>x.t!=="C"&&diff(d,x.d)>=2&&diff(d,x.d)<=5);let fac={opbouw:1.15,taper:.65,herstel:.55}[ph&&ph.k]||1;if(soon)fac=Math.min(fac,.75);
   const wk=rampWeek(p,wkInfo(p,d).wi);if(fac>1)fac=wk.G.al?1:Math.max(1,Math.min(fac,(+p.uren||6)*60/Math.max(1,wk.T)));const calm=(ph&&ph.k==="herstel")||soon;
-  return baseSession(calm?Object.assign({},p,{intens:{fi:false,lo:false}}):p,d,wk.f*fac,wk.G.al?Object.assign({},wk.G,{fac}):wk.G)}
+  return baseSession(calm?Object.assign({},p,{intens:{fi:false,lo:false}}):p,d,wk.f*fac,Object.assign({},wk.G,wk.G.al?{fac}:{},ph&&ph.k==="herstel"?{brick:false}:{}))}
 /* ---------- niveau en opbouw ---------- */
 const NIV={start:["Ik begin met trainen","Je sport weinig of niet, of je ligt er al lang uit. Je schema begint heel rustig, met lopen en wandelen afgewisseld, en groeit pas als je lichaam mee is."],
   basis:["Ik werk aan mijn basisconditie","Je traint al een tijdje, maar nog niet lang of niet heel regelmatig. Je begint met korte, rustige trainingen; tempo en blokjes komen er na een paar weken bij."],
@@ -1055,7 +1058,7 @@ function rampWeek(p,i){i=Math.max(0,i|0);const a=athOf(p),sig=rampSig(p,a);let c
           if(z2run&&al.zwem2<25){const sp2=al.zwem2;al.zwem2=0;al.z2drop=1;["kort","blok"].forEach(k0=>{if(al[k0])al[k0]+=sp2/2})}if(al.blok<45)al.noq=1;runs.forEach(k0=>{if(al[k0]&&al[k0]<20)al[k0]=20})}}
       if(F.run){if(al.zwem1)al.zwem1=Math.round(al.zwem1*40/100)*100;if(!z2run&&al.zwem2)al.zwem2=Math.round(al.zwem2*40/100)*100}else if(al.zwem2)al.zwem2=Math.round(al.zwem2*40/100)*100;
       al.z2run=F.run&&z2run&&!al.z2drop;wk.G=Object.assign({},wk.G,{al,F});wk.L=al.loop}
-    {const SA=stdAl(p,c,j,wk,F,H);wk.G=Object.assign({},wk.G,SA.G);wk.T=SA.T;wk.cap=SA.cap}
+    {const SA=stdAl(p,c,j,wk,F,H);wk.G=Object.assign({},wk.G,SA.G,{notest:!!wk.notest});wk.T=SA.T;wk.cap=SA.cap}
     {let rmn=0;for(let d=0;d<7;d++){const x=baseSession(p,add(m,d),f,wk.G);if(x&&x.sp==="lopen"&&x.min)rmn+=x.min}wk.runMin=rmn}
     {const p1=j>0?c.W[j-1]:null,p2=j>1?c.W[j-2]:null;wk.Lr=wk.G.al?wk.G.al.loop:Math.max(20,r5((wk.G.lfloor||0)*(rec?.8:1)),Math.min(wk.G.lrun,r5(TPL.LRUN[w]*f)));
       wk.G=Object.assign({},wk.G,{grew:!!(p1&&wk.Lr>Math.max(p1.Lr||0,p2?p2.Lr||0:0)+2),cyc:Math.floor(j/(p.blok==="2:1"?6:8)),wi:j})}
@@ -1171,6 +1174,8 @@ function bikeSet(p,w,cyc,z2l){const T=[["Fietsen: tempoblokjes","10' "+z2l+"\n3 
     S=[["Fietsen: sweet spot","10' "+z2l+"\n2 × 12' "+W(p,.86,.9)+", telkens 5' "+z2l+"\n4 × 30\" "+W(p,1.05,1.12)+", telkens 1'30\" rustig\nUitrijden"],["Fietsen: lange blokken","10' "+z2l+"\n2 × 20' "+W(p,.84,.88)+", 5' rustig ertussen\nUitrijden"],["Fietsen: sweet spot","10' "+z2l+"\n3 × 10' "+W(p,.88,.92)+", telkens 4' rustig\nUitrijden"],["Fietsen: over-unders","10' "+z2l+"\n3 × 8' afwisselend 2' "+W(p,.95,1)+" en 2' "+W(p,.85,.88)+", telkens 5' rustig\nUitrijden"]],
     V=[["Fietsen: VO2max","15' "+z2l+"\n5 × 3' "+W(p,1.05,1.1)+", telkens 3' rustig\nUitrijden"],["Fietsen: 30/30","15' "+z2l+"\n3 × (8 × 30\" "+W(p,1.15,1.25)+" / 30\" rustig), 5' rustig tussen de reeksen\nUitrijden"],["Fietsen: piramide","10' "+z2l+"\n6' "+W(p,.76,.8)+" · 4' "+W(p,.8,.86)+" · 2' "+W(p,.86,.92)+" · 1' "+W(p,1,1.08)+"\n5' rustig\n4' "+W(p,.82,.88)+" · 2' "+W(p,.94,1)+" · 1' "+W(p,1.04,1.12)+"\nUitrijden"],["Fietsen: 4 × 4'","15' "+z2l+"\n4 × 4' "+W(p,1.02,1.08)+", telkens 4' rustig\nUitrijden"]];
   T.push(["Fietsen: kracht","10' "+z2l+"\n5 × 5' zwaar verzet op 55-65 tpm, "+W(p,.75,.85)+", telkens 3' soepel\nUitrijden"]);
+  S.push(["Fietsen: klimblokken","15' "+z2l+"\n4 × 8' zittend op 65-75 tpm, "+W(p,.86,.92)+", telkens 4' rustig trappen (op een helling of binnen met veel weerstand)\nUitrijden"]);
+  T.push(["Fietsen: klimmen op tempo","15' "+z2l+"\n3 × 12' op 70-80 tpm, "+W(p,.78,.84)+", telkens 5' rustig trappen (op een helling of binnen met weerstand)\nUitrijden"]);
   S.push(["Fietsen: sweet spot met cadans","10' "+z2l+"\n5 × 1' snel trappen (110+ tpm), telkens 1' rustig\n3 × 12' "+W(p,.88,.93)+", 5' rustig ertussen\nUitrijden"]);
   V.push(["Fietsen: sprints","Rustige rit · "+z2l+"\nElke 10' 1' zo hard mogelijk, 6 keer in totaal\nDaarna rustig uitrijden"],["Fietsen: 40/20","15' "+z2l+"\n2 × (10 × 40\" "+W(p,1.1,1.2)+" / 20\" rustig), 5' rustig tussen de reeksen\nUitrijden"]);
   const pool=w===1||w===4?S:w===2||w===6?V:T;return pool[(cyc*3+w)%pool.length]}
@@ -1219,8 +1224,8 @@ function tidy(p,x){if(!x||x.td||x.empty||x.k==="race")return x;x.td=1;
 function kortSes(p,G,m,w,vi,rf){const a=+p.lt1||150,b=+p.lt2||a+15,IS=p.intens.lo&&G.strides,IT=p.intens.lo&&G.tempo,rec=w===3||w===7,Z2="onder "+(a-6)+" bpm",F1=(a-5)+"–"+(a+3)+" bpm",T1=(b-8)+"–"+(b-2)+" bpm",L=[];
   if(IS)L.push(["Lopen: versnellingen","Z2 · "+Z2+"\nOp het einde 6 × 20\" versnellingen: rustig opbouwen tot vlot, joggend herstel"]);
   L.push(["Lopen: cadans","10' inlopen "+Z2+"\n6 × 1' met korte, snelle passen (cadans 170+), tempo blijft "+Z2+"\nRustig verder "+Z2]);
-  if(IS)L.push(["Lopen: korte blokjes","15' rustig\n8 × 150 m vlot ("+(b-3)+"–"+(b+2)+" bpm), telkens 200 m joggen\nUitlopen "+Z2]);
-  const rq=rf&&G.vo2&&!G.grew;
+  if(IS&&!G.easyK)L.push(["Lopen: korte blokjes","15' rustig\n8 × 150 m vlot ("+(b-3)+"–"+(b+2)+" bpm), telkens 200 m joggen\nUitlopen "+Z2]);
+  const rq=rf&&G.vo2&&!G.grew&&!G.easyK;
   if(IT&&(!rf||rq))L.push(["Lopen: fartlek","15' rustig\n8 × 1' vlot ("+F1+"), telkens 1' joggen\nUitlopen "+Z2]);
   L.push(["Lopen: negatieve split","Eerste helft "+"onder "+(a-12)+" bpm\nTweede helft iets vlotter: "+(a-12)+"–"+(a-6)+" bpm"]);
   if(IT&&(!rf||rq))L.push(["Lopen: progressief","In drie gelijke stukken, elk stuk iets vlotter:\n1. "+(a-16)+"–"+(a-10)+" bpm\n2. "+(a-10)+"–"+(a-4)+" bpm\n3. "+F1+", nooit harder"]);
@@ -1234,7 +1239,7 @@ function runFocus(p,key,w,G){const K=G.fac||1,al=G.al||{},v=x=>r5((al[x]||0)*K),
   if(key==="loop"){const m=Math.max(20,v("loop")),mp=F.sp.mp&&IT&&!rec&&F.wk<=10&&F.wk>=4&&!G.grew&&m>=90,sf=["gelijkmatig","negatieve split: tweede helft iets vlotter, binnen je zone","gelijkmatig",G.grew?"gelijkmatig":"laatste "+(m>=80?3:2)+" km iets vlotter: "+(lt1-10)+"–"+(lt1-4)+" bpm"][(G.wi||0)%4];if(G.rw)return rwRun(p,m,G.k,1);
     return{k:"long",sp:"lopen",s:(m>=80?"Lange duurloop":"Duurloop")+(mp?" met marathontempo":["",": negatieve split","",G.grew?"":": vlotte finish"][(G.wi||0)%4]),t:dur(m)+(mp?" met marathontempo":" rustig"),min:m,z:"Z2 · onder "+z2top+" bpm, "+sf+(mp?"\nLaatste 30' op marathontempo ("+MPz+")":"")+(m>=75?"\nNeem drinken mee"+(m>=90?", en vanaf 1u15 iets om te eten (gel of koek): zo oefen je ook je wedstrijdvoeding":"")+".":"")+(m>=120?"\nWandel elke 3 km 1' (drinken en eten): zo beperk je de belasting en oefen je je wedstrijdstrategie.":"")}}
   if(key==="kort"&&w===7)return null;
-  if(key==="kort"){const m=Math.max(20,v("kort"));if(G.rw)return rwRun(p,m,G.k,0);return kortSes(p,G,m,w,G.wi||0,true)}
+  if(key==="kort"){const m=Math.max(20,v("kort"));if(G.rw)return rwRun(p,m,G.k,0);return kortSes(p,al.combo?Object.assign({},G,{easyK:1}):G,m,w,G.wi||0,true)}
   if(key==="zwem2"){if(G.rw||!(G.al&&G.al.z2run))return null;const m=Math.max(20,v("zwem2"));const sv=IS&&(G.wi||0)%2===1;return G.rw?rwRun(p,m,G.k,0):{k:"run",sp:"lopen",s:sv?"Herstelloop + versnellingen":"Herstelloop",t:dur(m)+" rustig",min:m,z:"Heel rustig, korte passen"+(sv?"\nOp het einde 4 × 15\" ontspannen versnellingen":"")}}
   if(key==="blok"){const m=Math.max(20,v("blok"));if(!IT||rec||al.noq)return G.rw?rwRun(p,m,G.k,0):kortSes(p,G,m,w,(G.wi||0)+1,true);
     const QM=[["Lopen: marathontempo","15' rustig\n3 × 10' marathontempo ("+MPz+"), telkens 3' joggen\nUitlopen",60],["Lopen: tempo","15' rustig\n4 × 6' tempo ("+TMz+"), telkens 2' joggen\nUitlopen",55],["Lopen: drempelblokjes","15' rustig\n6 × 3' op drempel ("+THz+"), telkens 2' joggen\nUitlopen",55],null,
@@ -1248,6 +1253,8 @@ function baseSession(p,d,f,G){
   const z2top=p.lt1-6,z2b=W(p,.56,.72),z2l=W(p,.56,.64),di=(P(d).getDay()+6)%7,key=Object.keys(p.days).find(k=>p.days[k]!==""&&+p.days[k]===di);
   const RUN=[25,30,30,25,35,35,35,25],SW1=[1200,1500,1700,1200,1800,1800,1800,1600],BK=[50,55,55,45,60,50,50,60],SW2=[1200,1500,1300,1200,1600,1500,1500,1200],LR=[60,75,90,60,105,90,90,45],LRUN=[30,35,35,30,40,40,45,55];
   const off={kort:"lo",loop:"lo",zwem1:"zw",zwem2:"zw",blok:"fi",rit:"fi"};
+  if(key==="zwem2"&&G.F&&G.F.run&&G.al&&G.al.combo&&G.al.fb){const p2=Object.assign({},p,{days:Object.assign({},p.days,{blok:p.days.zwem2,zwem2:""})}),G2=Object.assign({},G,{F:null,al:Object.assign({},G.al,{blok:G.al.fb,combo:false})}),x=baseSession(p2,d,f,G2);
+    if(x&&x.sp==="fietsen"){x.combo=1;x.z=(x.z||"")+"\nFietsen blijft in je marathonblok: na de marathon volgt je triatlon.";return x}}
   if(key&&G.F&&G.F.run){if(G.skip&&G.skip[key])return{k:"rust",s:"Rust",t:"",z:"Rustdag: wandelen of rustig fietsen mag."};const x=runFocus(p,key,w,G);if(x)return x}
   if(!key||!p.sports[off[key]])return{k:"rust",s:"Rust",t:"",z:"Rustdag."};
   if((key==="rit"||key==="blok")){const nr=(p.races||[]).find(r=>r.d===add(d,1));if(nr)return{k:"rust",s:"Rust",t:"",z:"Rustdag: morgen "+(nr.n||"je wedstrijd")+". Benen sparen."}}
@@ -1258,7 +1265,7 @@ function baseSession(p,d,f,G){
     if(p.sports.fi)return{k:"long",sp:"fietsen",s:"Fietsen (zwembad dicht)",t:dur(Math.max(BMIN,m))+" Z2",min:Math.max(BMIN,m),z:why+" In de plaats: rustig fietsen · "+z2b+"\nThuis 10' zwemspieren met een elastiek: trekbeweging, schouders en romp."};
     if(p.sports.lo)return{k:"run",sp:"lopen",s:"Lopen (zwembad dicht)",t:dur(Math.min(m,45))+" rustig",min:Math.min(m,45),z:why+" In de plaats: rustig lopen onder "+z2top+" bpm\nThuis 10' zwemspieren met een elastiek."};
     return{k:"rust",s:"Rust",t:"",z:why+" Rustdag."}}
-  if(key==="kort"&&w===7&&!(G.skip&&G.skip.kort)&&p.sports.lo){const up=" Gingen de laatste weken goed, dan ga je na deze test een niveau hoger.";
+  if(key==="kort"&&w===7&&!G.notest&&!(G.skip&&G.skip.kort)&&p.sports.lo){const up=" Gingen de laatste weken goed, dan ga je na deze test een niveau hoger.";
     return G.rw?{k:"run",sp:"lopen",s:"Niveautest lopen",t:"",min:30,z:"5' stevig wandelen\nZo lang mogelijk rustig doorlopen zonder te wandelen, tot 20'\nNoteer hoe lang het lukte en je gemiddelde hartslag. Daarna 5' wandelen."+up}
       :G.test?{k:"run",sp:"lopen",s:"Niveautest lopen",t:"",min:55,z:"15' inlopen\n30' zo snel mogelijk en gelijkmatig (richtpunt: je omslagpunt, ±"+mmS(zones0(p).p2)+"/km)\n10' uitlopen\nGem. hartslag van de laatste 20' ≈ je omslagpunt."+up}
       :{k:"run",sp:"lopen",s:"Niveautest lopen",t:"",min:45,z:"15' inlopen\n25' vlot maar gecontroleerd: zo snel als je het hele stuk gelijk kunt houden (richtpunt ±"+mmS((zones0(p).p1+zones0(p).p2)/2)+"/km)\n5' uitlopen\nNoteer je afstand en je gemiddelde hartslag."+up}}
@@ -1878,7 +1885,7 @@ function obFinish(){const prev=A(),id=S.act,z=OB.z,p=Object.assign(DEF(),{naam:O
   S.ath[id]={id,p,log:[],check:{},gear:[],onb:true};
   p.coachId=OB.rol==="gecoacht"&&OB.coach?OB.coach:null;p.cplan=prev.p.cplan||{};p.cnote=prev.p.cnote||{};p.cmsg=prev.p.cmsg||[];S.ath[id].log=prev.log||[];S.ath[id].check=prev.check||{};S.ath[id].gear=prev.gear||[];
   profUpd({naam:OB.naam,rol:OB.rol,coach_id:p.coachId,...(OB.rol==="coach"&&PROF&&PROF.is_admin?{coach_ok:true}:{})});
-  save();sel=TODAY;sw0=mon(TODAY);wk0=mon(TODAY);cSel=null;OB=null;document.body.classList.remove("onb");location.hash=p.want==="garmin"&&(CFG.garmin||CFG.garminKey)?"#instellingen":p.rol==="coach"?"#coach":"#vandaag";all();route()}
+  save();sel=TODAY;sw0=mon(TODAY);wk0=mon(TODAY);cSel=null;OB=null;document.body.classList.remove("onb");location.hash=p.want==="garmin"&&(CFG.garmin||CFG.garminKey)?"#instellingen/koppel":p.rol==="coach"?"#coach":"#vandaag";all();route()}
 let pN=12;const fy=d=>P(d).toLocaleDateString("nl-BE",{day:"numeric",month:"short",year:"numeric"}).replace(".","");
 function plan(){const a=A(),p=a.p,cp=cPlanned(p),ext=p.src==="coachbox"||p.src==="ics"||cp,PH=ext?[]:phasesOf(p),A0=PH.length?PH[0].a:p.start,Z=PH.length?PH[PH.length-1].b:add(p.start,7*16),T=Math.max(1,diff(A0,Z)+1);
   const up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((x,y)=>x.d<y.d?-1:1),g=up.find(r=>r.t==="A")||up[0];
@@ -2488,7 +2495,7 @@ $("links").addEventListener("click",async e=>{const t=e.target;
     try{const j=await garminPost("psync");await softReload();location.hash="#instellingen/koppel";gpMsg(j.wait?"Net nog opgehaald. Probeer het over een minuut opnieuw.":j.error==="sleutel"?GPE.sleutel_ongeldig:j.error==="garmin"?"Garmin antwoordde niet volledig. De volgende poging komt vanzelf.":gpN(j.n))}
     catch(err){b.disabled=false;gpMsg(GPE[err&&err.code]||"Dat lukte niet. Probeer het straks opnieuw.")}return}
   if(t.closest("#gp-del")){const b=t.closest("#gp-del");if(!gpDel){gpDel=1;b.textContent="Klik nog eens om te verwijderen";setTimeout(()=>{gpDel=0;const x=$("gp-del");if(x)x.textContent="Sleutel verwijderen"},4000);return}gpDel=0;b.disabled=true;
-    try{await garminPost("punkey");await softReload();location.hash="#instellingen";gpMsg("Je sleutel is verwijderd. Trek hem ook in bij Garmin Connect (Persoonlijke API-sleutel). Je opgehaalde trainingen blijven in je logboek.")}
+    try{await garminPost("punkey");await softReload();location.hash="#instellingen/koppel";gpMsg("Je sleutel is verwijderd. Trek hem ook in bij Garmin Connect (Persoonlijke API-sleutel). Je opgehaalde trainingen blijven in je logboek.")}
     catch(err){b.disabled=false;gpMsg(GPE[err&&err.code]||"Dat lukte niet. Probeer het straks opnieuw.")}return}});
 let gOff=0;$("links").addEventListener("click",async e=>{const b=e.target.closest("#g-btn");if(!b)return;const gl=GL(A().p);
   if(gl&&!gOff){gOff=1;b.textContent="Klik nog eens om te ontkoppelen";setTimeout(()=>{gOff=0;linkR()},4000);return}gOff=0;b.disabled=true;$("kmsg").textContent=gl?"Bezig met ontkoppelen…":"Je gaat naar Garmin Connect…";
@@ -2592,7 +2599,7 @@ function ledenR(){const box=$("leden");if(!PROF||!PROF.is_admin){box.hidden=true
     (act&&m.rol==="coach"&&!m.coach_ok?'<button type="button" data-la="cok">Coach goedkeuren</button>':'')+(act&&m.rol==="coach"&&m.coach_ok&&!me?'<button type="button" class="ghost" data-la="cnok">Coachrol intrekken</button>':'')+
     (act&&m.rol!=="coach"?'<label class="lidc">Coach<select data-la="coach"><option value="">geen</option>'+cs.filter(c=>c.id!==m.id).map(c=>'<option value="'+c.id+'"'+(m.coach_id===c.id?" selected":"")+'>'+esc(c.naam)+'</option>').join("")+'</select></label>':'')+
     (act&&!me?'<button type="button" class="ghost" data-la="'+(m.is_admin?"noadm":"adm")+'">'+(m.is_admin?"Geen beheerder meer":"Maak beheerder")+'</button>':'')+'</div></div>'}).join("")}
-async function updMember(id,u){$("ledenMsg").textContent="Bezig…";const r=await sb.from("profiles").update(u).eq("id",id).select().single();if(r.error){$("ledenMsg").textContent="Niet gelukt. Probeer opnieuw.";console.error(r.error);return}$("ledenMsg").textContent="Bewaard.";await softReload();if(location.hash!=="#instellingen")location.hash="#instellingen"}
+async function updMember(id,u){$("ledenMsg").textContent="Bezig…";const r=await sb.from("profiles").update(u).eq("id",id).select().single();if(r.error){$("ledenMsg").textContent="Niet gelukt. Probeer opnieuw.";console.error(r.error);return}$("ledenMsg").textContent="Bewaard.";await softReload();if(!/^#instellingen\//.test(location.hash))location.hash="#instellingen/beheer"}
 $("ledenL").addEventListener("click",e=>{const b=e.target.closest("button[data-la]");if(!b)return;const id=b.closest("[data-mid]").dataset.mid,u={ok:{status:"actief"},nee:{status:"geweigerd"},cok:{coach_ok:true},cnok:{coach_ok:false},adm:{is_admin:true},noadm:{is_admin:false}}[b.dataset.la];if(u)updMember(id,u)});
 $("ledenL").addEventListener("change",e=>{const s=e.target.closest("select[data-la=coach]");if(!s)return;updMember(s.closest("[data-mid]").dataset.mid,s.value?{coach_id:s.value,rol:"gecoacht"}:{coach_id:null})});
 /* ---------- starten ---------- */
