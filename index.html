@@ -349,6 +349,30 @@ table.laps{margin:2px 0 14px;font-variant-numeric:tabular-nums}.laps caption{tex
 .adapt{border:1px solid var(--line);border-radius:18px;padding:18px;margin:4px 0 22px}
 .adapt textarea{font:16px "Familjen Grotesk",sans-serif;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);width:100%;resize:vertical;min-height:70px}
 .adapt .f{margin-top:12px}#a-b{grid-column:span 2}.adone{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:15px}.adone p{flex:1;min-width:220px}
+.day button.lnk{background:none;border:0;padding:2px 0;min-height:0;width:auto;color:var(--ink);font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;box-shadow:none;border-radius:0}
+.othb{display:inline-block;margin-top:6px}
+.othr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:6px;font-size:13px}.othr span{font-weight:600}
+.othf{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.othf label{display:grid;gap:3px;font-size:13px;font-weight:600}
+.othf input,.othf select{min-height:40px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-weight:400;width:100%;max-width:none}
+.othb2{display:flex;flex-wrap:wrap;gap:6px}.othb2 button{min-height:38px;padding:0 14px}
+.othf .othn{margin:0;font-size:12px}
+.othm{margin-top:6px;font-size:13px}
+.pgoal{margin-bottom:14px}
+.pgoal>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:4px 0}
+.pgoal>summary::-webkit-details-marker{display:none}
+.pgoal>summary .sh{margin-bottom:0}
+.pgoal .pgt{display:grid;gap:2px}
+.pgoal .pnowl{color:var(--mute);font-size:14px;font-weight:500}
+.pgoal>summary .vchev{margin-right:6px}
+.pgoal[open]>summary{margin-bottom:14px}.pgoal[open]>summary .vchev{transform:rotate(90deg)}
+.pgoal>summary:focus-visible{outline:2px solid var(--run);outline-offset:2px;border-radius:8px}
+.pgoal.noexp>summary{cursor:default;pointer-events:none}.pgoal.noexp .vchev{display:none}
+.vb2{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease}.vb2.vbo{grid-template-rows:1fr}
+.vb2>.vbi2{overflow:hidden;min-height:0}.vb2.vbo>.vbi2{padding-bottom:14px}
+.vb2[hidden],.vt[hidden]{display:none}
+.adapt2 .f{margin-top:8px}
+@media(prefers-reduced-motion:reduce){.vb2{transition:none}}
 .adjl{display:inline-block;margin-top:6px;font-size:12.5px;font-weight:700;color:light-dark(#a35f00,#f6b75a)}
 .srcl{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 9px;border-radius:12px;background:color-mix(in srgb,currentColor 12%,transparent);margin-left:6px;vertical-align:1px}
 /* labverslag */
@@ -576,6 +600,8 @@ p.cmorn{display:block}
           <div class="fuel" id="hfuel" hidden></div>
           <p class="hadvice" id="hadvice" hidden></p>
         </div></div>
+        <button type="button" class="vt" data-vt="adapt" id="vt-adapt" aria-expanded="false" aria-controls="vb-adapt"><i class="vchev" aria-hidden="true"></i><span>Ziet je week er anders uit?</span></button>
+        <div class="vb2" id="vb-adapt"><div class="vbi2"><div class="adapt2" id="adapt2"></div></div></div>
       </article>
       <article class="vc vana ana" id="anaCard">
         <div class="vch"><h2 id="anaH">Laatste training</h2></div>
@@ -708,9 +734,9 @@ p.cmorn{display:block}
   </div>
 </section>
 <section id="v-plan" hidden>
-  <h2 class="sh" id="ptitle">Je plan</h2>
+  <details class="pgoal" id="pgoal"><summary><span class="pgt"><h2 class="sh" id="ptitle">Je plan</h2><span class="pnowl" id="pnowl"></span></span><i class="vchev" aria-hidden="true"></i></summary>
   <div class="phases" id="phases"></div>
-  <div class="plegend" id="plegend"></div>
+  <div class="plegend" id="plegend"></div></details>
   <div class="psrc" id="psrc" hidden></div>
   <div class="pramp" id="pramp" hidden></div>
   <article class="adapt" id="adapt" hidden></article>
@@ -999,7 +1025,8 @@ function session(p,d){if(CO(p))return null;
   const x=session0(p,d);if(!x||!p.src||(p.src!=="coachbox"&&p.src!=="ics"))return x;const hz=add(TODAY,p.src==="coachbox"?28:14);
   if(d>hz&&!x.adj)return{k:"rust",s:"Nog niet ingepland",t:"",z:p.src==="coachbox"?"Je coach heeft deze dag nog niet ingevuld in Coachbox.":"Je agenda-link toont alleen de komende 14 dagen."};return Object.assign({src:p.src},x)}
 function wkOther(p,d){if(!p||!p.wkx||!Array.isArray(p.wk7))return null;const i=(P(d).getDay()+6)%7;if(p.wk7[i]!=="ander"||wkShow(p)[i]!=="ander")return null;const o=p.wkx[i];return o&&o.n?o:null}
-function session0(p,d){const x=kmify(p,session00(p,d));if(p.ov&&p.ov[d])return x;const y=tidy(p,x),o=y&&y.k!=="race"?wkOther(p,d):null;if(!o)return y;
+const othOf=(p,d)=>{const o=p&&p.oth&&p.oth[d];return o&&o.n?o:wkOther(p,d)};
+function session0(p,d){const x=kmify(p,session00(p,d)),y=p.ov&&p.ov[d]?x:tidy(p,x),o=y&&y.k!=="race"?othOf(p,d):null;if(!o)return y;
   if(o.z==="zwaar"||y.k==="rust")return{k:"rust",oth:1,s:"Andere sport: "+o.n,t:"",z:o.z==="zwaar"?"Vandaag doe je "+o.n+". Dat is zwaar, dus dat is je training van de dag: de app plant er niets bij.\nNoteer het achteraf in je logboek.":"Vandaag doe je "+o.n+" ("+o.z+"). De app plant er deze keer niets bij."};
   return Object.assign({},y,{z:(y.z||"")+(o.z==="licht"?"\nOok op je planning: "+o.n+" (licht). Dat mag er gewoon bij.":"\nOf in de plaats: "+o.n+" (gemiddeld). Kies zelf wat je vandaag doet.")})}
 function session00(p,d){if(!p.start||d<p.start)return null;if(p.ov&&p.ov[d])return Object.assign({},p.ov[d]);
@@ -1736,13 +1763,15 @@ const aiMsg=(e,dflt)=>AIERR[e&&e.code]||dflt;
 async function AI(kind,prompt,files){if(!sb)throw{code:"geen_sleutel"};const {data:{session}}=await sb.auth.getSession();let r;try{r=await fetch(CFG.url+"/functions/v1/ai",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+(session?session.access_token:""),apikey:CFG.key},body:JSON.stringify({kind,prompt,files:files||[]})})}catch(e){throw{code:"net"}}const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:j.error||"ai_fout"};return j.text||""}
 const b64=f=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(",")[1]);fr.onerror=rej;fr.readAsDataURL(f)});
 const SMP=Object.assign(async prompt=>({text:await AI("adapt",prompt)}),{json:async(prompt,o)=>{const files=await Promise.all((o&&o.images||[]).map(async f=>({mediaType:/pdf/i.test(f.type)||/\.pdf$/i.test(f.name)?"application/pdf":f.type,data:await b64(f)})));const t=await AI("lab",prompt,files),m=String(t).match(/\{[\s\S]*\}/);if(!m)throw{code:"invalid_json"};return JSON.parse(m[0])},limits:async()=>({images:{maxCount:4,mediaTypes:["image/jpeg","image/png","image/webp","image/gif"]}})});
-function adaptR(){const p=A().p,box=$("adapt");if(!box)return;
+function adaptR(v){const p=A().p;let box=$("adapt");if(!box)return;
+  {const vt=$("vt-adapt"),vb=$("vb-adapt"),off=!!(p.src&&p.src!=="site")||!!(cPlanned(p)&&p.rol==="gecoacht");if(vt){vt.hidden=off;vb.hidden=off}}
+  if(v&&cPlanned(p)&&p.rol==="gecoacht")return;
   if(cPlanned(p)&&p.rol==="gecoacht"){box.hidden=false;const L=p.cmsg||[],cn=p.coachId?short(nameOf(p.coachId)):"je coach";p.sread=Date.now();
     box.innerHTML='<div class="bhead"><h2>Berichten met je coach</h2><span class="note">alleen jij en '+esc(cn)+'</span></div><div class="chat" style="height:min(44dvh,420px);margin-top:10px"><div class="msgs" id="pcMsgs">'+(L.length?L.map(m=>{const me=m.by==="s",d=new Date(m.ts);return'<div class="m'+(me?" me":"")+'">'+av(me?S.act:(p.coachId||"x"))+'<div class="bub"><p class="mh">'+(me?"":'<b>'+esc(cn)+'</b><span class="ctag">coach</span>')+relD(iso(d))+' '+d.toLocaleTimeString("nl-BE",{hour:"2-digit",minute:"2-digit"})+'</p><p class="mt">'+esc(m.t)+'</p></div></div>'}).join(""):'<p class="note" style="margin:auto;text-align:center">Nog geen berichten.</p>')+'</div><form class="compose" id="pcf"><input id="pcin" maxlength="500" autocomplete="off" aria-label="Bericht aan je coach" placeholder="bv. Mijn kuit is stijf, mag ik donderdag fietsen in plaats van lopen?"><button type="submit">Verstuur</button></form></div>';
     const mm=$("pcMsgs");if(mm)mm.scrollTop=mm.scrollHeight;return}
-  box.hidden=p.src&&p.src!=="site";if(box.hidden)return;
+  box.hidden=true;box.innerHTML="";if(p.src&&p.src!=="site")return;box=$("adapt2");if(!box)return;
   const ws=[mon(TODAY),add(mon(TODAY),7)],done=ws.filter(w=>p.adjw&&p.adjw[w]);
-  box.innerHTML='<div class="bhead"><h2>Ziet je week er anders uit?</h2></div><p class="note">Typ wat er anders is, bijvoorbeeld "dinsdag en donderdag geen tijd" of "woensdag geen tijd, zaterdag wel". Die dagen worden rust en je belangrijke trainingen schuiven naar je vrije dagen: nooit twee zware dagen na elkaar en nooit meer trainingstijd. Voor andere vragen, zoals "mijn kuit is gevoelig" of "zaterdag groepsrit van 3 uur", helpt de AI.</p>'+
+  box.innerHTML='<p class="note">Typ bijvoorbeeld "dinsdag en donderdag geen tijd" of "woensdag geen tijd, zaterdag wel". Die dagen worden rust en je trainingen schuiven naar je vrije dagen. Voor andere vragen, zoals "mijn kuit is gevoelig", helpt de AI.</p>'+
     '<form class="f" id="af"><label class="full">Wat is er anders?<textarea id="a-t" rows="2" maxlength="300" required placeholder="bv. Dinsdag en donderdag geen tijd.">'+esc(p.wens||"")+'</textarea></label><label>Welke week<select id="a-w"><option value="0">Deze week</option><option value="7">Volgende week</option></select></label><button type="submit" id="a-b">Pas mijn week aan</button></form><p class="msg" id="amsg"></p>'+
     done.map(w=>{const j=p.adjw[w];return'<div class="adone"><p><b>'+(w===ws[0]?"Deze week":"Volgende week")+' aangepast</b> op je vraag "'+esc(j.vraag)+'". '+esc(j.uitleg||"")+'</p><button type="button" class="ghost" data-undo="'+w+'">Ongedaan maken</button></div>'}).join("")}
 // eenvoudige vragen over dagen ("dinsdag en donderdag geen tijd", "woensdag geen tijd, zaterdag wel") lost de app zelf op
@@ -1766,9 +1795,9 @@ function wkMove(p,w0,no,yes){const days=[0,1,2,3,4,5,6].map(i=>add(w0,i)),cur=da
     const cand=[0,1,2,3,4,5,6].filter(j=>ok(j)&&!(plan[j]&&(plan[j].k==="race"||plan[j].oth||tr(plan[j])&&pr(plan[j])>=pr(x)))&&!R.includes(days[j])&&!(h&&R.includes(add(days[j],1))));
     // zware dag ernaast: een lange training, of een zware training van dezelfde sport (ook zondag ervoor en maandag erna)
     const nbH=j=>[j-1,j+1].some(k=>{const y=k<0?eS[0]:k>6?eS[1]:plan[k];return y&&(lng(y)||hard(y)&&y.sp===x.sp)});
-    const sc=j=>(tr(plan[j])?30:0)+(yes.includes(j)?-20:0)+(lng(x)&&j>=5?-10:0)+(h&&nbH(j)?100:0)+Math.abs(j-i);
+    const sc=j=>(tr(plan[j])?30:0)+(yes.includes(j)?-20:0)+(lng(x)&&j>=5?-10:0)+(h&&nbH(j)?8:0)+Math.abs(j-i);
     const c=cand.sort((a,b)=>sc(a)-sc(b))[0];
-    if(c==null||(h&&nbH(c))){drop.push([i,c==null?"vol":"zwaar"]);return}
+    if(c==null){drop.push([i,"vol"]);return}
     if(tr(plan[c]))drop.push([c,"plaats",x]);plan[c]=x;moves.push([i,c])});
   return{days,cur,moves,drop,rest}}
 function adaptLocal(txt,off,q){const p=A().p,w0=add(mon(TODAY),off),M=wkMove(p,w0,q.no,q.yes);if(!M.rest.length&&!q.no.length)return null;
@@ -1784,7 +1813,7 @@ function adaptLocal(txt,off,q){const p=A().p,w0=add(mon(TODAY),off),M=wkMove(p,w
 async function adaptGo(txt,off){const p=A().p,w0=add(mon(TODAY),off),days=[0,1,2,3,4,5,6].map(i=>add(w0,i)).filter(d=>d>=TODAY);if(!days.length)return;
   const wk=days.map(d=>{const x=session(p,d)||{};return{datum:d,dag:DL[(P(d).getDay()+6)%7],sport:!x.k||x.k==="rust"?"rust":x.sp||"rust",training:x.s||"Rust",min:x.min||0,details:String(x.z||"").slice(0,160)}}),Z=zones(p);
   const prompt='Je bent een voorzichtige triatloncoach. Pas het weekplan van een atleet aan op basis van zijn vraag. Antwoord ALLEEN met JSON, zonder andere tekst, in dit formaat: {"uitleg":"1 of 2 korte zinnen in het Nederlands, aan de atleet gericht (je/jij)","dagen":[{"datum":"YYYY-MM-DD","sport":"lopen|fietsen|zwemmen|kracht|rust","training":"korte naam","min":0,"details":"zones en opbouw, hooguit 160 tekens"}]}. Zet in "dagen" alleen de dagen die veranderen.\n'+
-    'Regels: 1) De totale trainingstijd van de week mag niet stijgen. 2) Nooit twee zware trainingen (blokjes, fartlek, tempo, lange duur) op opeenvolgende dagen. 3) Gebruik alleen de zones hieronder. 4) Bij pijn of een blessure: die sport rustiger of schrappen, een alternatief zonder belasting voorstellen, en in de uitleg aanraden een arts of kinesist te raadplegen als het aanhoudt. Stel geen diagnose. 5) Wijzig alleen dagen uit de lijst. 6) Respecteer het niveau en de opbouw: maak het nooit zwaarder of intensiever dan het niveau toelaat.\n'+'Niveau: '+nivTxt(p)+'\n'+
+    'Regels: 1) De totale trainingstijd van de week mag niet stijgen. 2) Spreid zware trainingen (blokjes, fartlek, tempo, lange duur) waar het kan, maar twee zware dagen na elkaar mag: een triatleet moet belasting kweken. Nooit een zware training de dag voor een wedstrijd. 3) Gebruik alleen de zones hieronder. 4) Bij pijn of een blessure: die sport rustiger of schrappen, een alternatief zonder belasting voorstellen, en in de uitleg aanraden een arts of kinesist te raadplegen als het aanhoudt. Stel geen diagnose. 5) Wijzig alleen dagen uit de lijst. 6) Respecteer het niveau en de opbouw: maak het nooit zwaarder of intensiever dan het niveau toelaat.\n'+'Niveau: '+nivTxt(p)+'\n'+
     'Zones: lopen Z2 '+Z.run[1][2]+' bpm, Z3 '+Z.run[2][2]+' bpm; fietsen Z2 '+Z.bike[1][2]+', Z3 '+Z.bike[2][2]+'; zwemmen Z2 '+Z.swim[1][2]+' per 100 m.\nWeekplan: '+JSON.stringify(wk)+'\nVraag van de atleet: """'+txt.replace(/"""/g,"")+'"""';
   const r=await SMP(prompt),m=String(r&&r.text||"").match(/\{[\s\S]*\}/);if(!m)throw{code:"parse"};const j=JSON.parse(m[0]);
   const SP=["lopen","fietsen","zwemmen","kracht","rust"],ok=(Array.isArray(j.dagen)?j.dagen:[]).filter(x=>x&&days.includes(x.datum)&&SP.includes(x.sport));
@@ -1897,7 +1926,7 @@ function obR(){if(!OB)obReset();const st=obSteps(),k=st[OB.step],n=OB.rol?st.len
   else if(k==="niveau")h='<h2>Hoe sta je er nu voor?</h2><p class="lead">'+(OB.rol==="gecoacht"?'Je coach ziet dit en houdt er rekening mee bij je schema.':'Daarmee bepaalt de website hoe rustig je schema begint en hoe snel het opbouwt. Kies eerlijk: rustig beginnen is de snelste weg naar je doel.')+'</p><div class="onbc" role="radiogroup" aria-label="Hoe sta je er nu voor?">'+NIVK.map(v=>radio("ob-niv",v,OB.niv,NIV[v][0],NIV[v][1])).join("")+'</div>';
   else if(k==="week")h='<h2>Je trainingsweek</h2><p class="lead">Hoeveel tijd heb je, en wanneer? Daarmee maakt de website je schema.</p><div class="f"><label>Maximaal uren per week<input id="ob-uren" type="number" min="2" max="25" step="0.5" value="'+esc(OB.uren)+'"></label><label>Ritme<select id="ob-blok"><option value="3:1"'+(OB.blok==="3:1"?" selected":"")+'>3 weken op, 1 rust</option><option value="2:1"'+(OB.blok==="2:1"?" selected":"")+'>2 weken op, 1 rust</option></select></label>'+
     '</div><p class="note" style="margin:16px 0 0">Kies per dag wat je doet, of "Maakt niet uit": dan kiest de app. Op zaterdag en zondag komen je lange trainingen.</p><div class="wkg">'+wkGrid("ob-wd",OB.wk7||wkOf(OB.days),"",OB.sports,OB.wkx)+'</div><div class="ck" style="margin-top:12px"><label class="chk"><input type="checkbox" id="ob-zw"'+(OB.sports.zw?" checked":"")+'>Zwemmen</label><label class="chk"><input type="checkbox" id="ob-fi"'+(OB.sports.fi?" checked":"")+'>Fietsen</label><label class="chk"><input type="checkbox" id="ob-lo"'+(OB.sports.lo?" checked":"")+'>Lopen</label></div>'+
-    '<label class="full" style="display:grid;gap:6px;margin-top:16px;font-weight:600">Wensen voor je schema (mag leeg)<textarea id="ob-wens" rows="3" maxlength="300" placeholder="bv. Op dinsdag zwem ik met de club, en mijn lange rit doe ik liefst op zondag.">'+esc(OB.wens)+'</textarea></label><p class="note">Je wensen staan klaar bij Plan, in het vak "Iets veranderen aan je week?". Met één klik past de AI je week aan.</p>'+(OB.niv&&OB.niv!=="doel"?'<p class="note" id="ob-ramp">Je begint niet meteen met al die uren: je schema start met ±'+uurS(RP[OB.niv].s0(+OB.uren||6))+' per week en groeit rustig naar je maximum.</p>':'');
+    '<label class="full" style="display:grid;gap:6px;margin-top:16px;font-weight:600">Wensen voor je schema (mag leeg)<textarea id="ob-wens" rows="3" maxlength="300" placeholder="bv. Op dinsdag zwem ik met de club, en mijn lange rit doe ik liefst op zondag.">'+esc(OB.wens)+'</textarea></label><p class="note">Je wensen staan klaar bij Vandaag, onder "Ziet je week er anders uit?". Met één klik past de app je week aan.</p>'+(OB.niv&&OB.niv!=="doel"?'<p class="note" id="ob-ramp">Je begint niet meteen met al die uren: je schema start met ±'+uurS(RP[OB.niv].s0(+OB.uren||6))+' per week en groeit rustig naar je maximum.</p>':'');
   else if(k==="doelen")h='<h2>Je doelen</h2><p class="lead">Naar welke wedstrijden werk je toe? Ze komen op je tijdslijn'+(OB.rol==="gecoacht"?' en je coach ziet ze.':', en je plan bouwt ernaartoe.')+'</p><div id="ob-races">'+OB.races.map((r,i)=>'<div class="obrace" data-i="'+i+'"><label>Naam<input class="ob-rn" maxlength="40" value="'+esc(r.n)+'" placeholder="bv. Halve marathon"></label><label>Waar<input class="ob-rw" maxlength="80" autocomplete="off" value="'+esc(r.w)+'" placeholder="bv. Roeselare"></label><label>Datum<input class="ob-rd" type="date" value="'+esc(r.d)+'"></label><label>Belang<select class="ob-rt"><option'+(r.t==="A"?" selected":"")+'>A</option><option'+(r.t==="B"?" selected":"")+'>B</option><option'+(r.t==="C"?" selected":"")+'>C</option></select></label><button type="button" class="x" data-obdel="'+i+'" aria-label="Verwijderen">×</button></div>').join("")+'</div><button type="button" class="ghost" id="ob-add" style="margin-top:10px">+ Nog een doel</button><p class="note" style="margin-top:8px">A = je hoofddoel, B = belangrijk, C = tussendoel. Nog geen doel? Laat het leeg.</p>';
   else if(k==="zones")h='<h2>Je zones</h2><p class="lead">Uit je inspanningstest of je Garmin. Leeg laten mag: dan starten we met veilige standaardwaarden.</p><div class="f">'+
     [["lt1","Vetdrempel lopen (bpm)","number"],["lt2","Omslagpunt lopen (bpm)","number"],["p1","Tempo vetdrempel (/km)","text"],["p2","Tempo omslagpunt (/km)","text"],["ftp","FTP fiets (W)","number"],["css","CSS zwemmen (/100 m)","text"],["na","Natrium in zweet (mg/L)","number"]].map(([key,l,t])=>'<label>'+l+'<input id="ob-z-'+key+'" type="'+t+'" value="'+esc(OB.z[key])+'"'+(t==="text"?' placeholder="5:30"':'')+'></label>').join("")+'</div><p class="note" style="margin-top:12px">Heb je een verslag van een inspanningstest of zweettest? Laad het na de start op bij Zones, dan wordt alles automatisch ingevuld.</p>';
@@ -1940,20 +1969,37 @@ function obFinish(){const prev=A(),id=S.act,z=OB.z,p=Object.assign(DEF(),{naam:O
   profUpd({naam:OB.naam,rol:OB.rol,coach_id:p.coachId,...(OB.rol==="coach"&&PROF&&PROF.is_admin?{coach_ok:true}:{})});
   save();sel=TODAY;sw0=mon(TODAY);wk0=mon(TODAY);cSel=null;OB=null;document.body.classList.remove("onb");location.hash=p.want==="garmin"&&(CFG.garmin||CFG.garminKey)?"#instellingen/koppel":p.rol==="coach"?"#coach":"#vandaag";all();route()}
 let pN=12;const fy=d=>P(d).toLocaleDateString("nl-BE",{day:"numeric",month:"short",year:"numeric"}).replace(".","");
+let OTHOPEN=null,OTHMSG=null;
+function othH(p,d){const o=p.oth&&p.oth[d],m=OTHMSG&&OTHMSG.d===d?'<p class="msg othm">'+esc(OTHMSG.t)+'</p>':'';
+  if(OTHOPEN===d)return'<div class="othf" data-othd="'+d+'"><label>Welke sport?<input class="oth-n" maxlength="30" autocomplete="off" placeholder="bv. wandelen, padel, voetbal" value="'+esc(o?o.n:"")+'"></label><label>Hoe zwaar?<select class="oth-z">'+[["licht","Licht"],["gemiddeld","Gemiddeld"],["zwaar","Zwaar"]].map(([v,t])=>'<option value="'+v+'"'+((o?o.z:"licht")===v?" selected":"")+'>'+t+'</option>').join("")+'</select></label><p class="note othn">Licht: je training blijft staan. Gemiddeld: je kiest zelf. Zwaar: in de plaats van je training.</p><div class="othb2"><button type="button" data-othsave="'+d+'">Bewaar</button><button type="button" class="ghost" data-othx="1">Annuleer</button></div></div>'+m;
+  return(o?'<div class="othr"><span>'+esc(o.n)+' ('+esc(o.z)+'):</span><button type="button" class="lnk" data-oth="'+d+'">wijzig</button><button type="button" class="lnk" data-othdel="'+d+'">verwijder</button></div>':'<button type="button" class="lnk othb" data-oth="'+d+'">+ Andere sport</button>')+m}
+function othSave(d,n,z){const p=A().p;p.oth=p.oth||{};n=String(n||"").trim().slice(0,30);if(!n){OTHMSG={d,t:"Vul in welke sport je doet."};return}
+  let t="Bewaard: "+n+" ("+z+").";
+  if(z==="zwaar"){const x=session(p,d);if(x&&x.k!=="rust"&&x.k!=="race"&&!x.oth){const w0=mon(d),i=diff(w0,d),M=wkMove(p,w0,[i],[]);p.ov=p.ov||{};p.adjw=p.adjw||{};const ch=new Set((p.adjw[w0]&&p.adjw[w0].dagen)||[]),nm=y=>(y.s||"").split(":")[0].replace(/ met .*/,"").trim();
+      M.moves.forEach(([a,c])=>{const y=M.cur[a];p.ov[M.days[c]]=Object.assign({},y,{adj:1,z:(y.z||"")+"\nVerplaatst van "+DL[a]+" omdat je dan "+n+" doet."});ch.add(M.days[c])});
+      if(p.ov[d])delete p.ov[d];
+      const u=M.moves.length?M.moves.map(([a,c])=>nm(M.cur[a])+" schuift naar "+DL[c]).join(", ")+".":nm(x)+" valt die dag weg: er is geen vrije dag meer in die week.";
+      M.drop.forEach(([a,r,y])=>{if(r==="plaats")t+=" "+nm(M.cur[a])+" ("+DL[a]+") valt weg om plaats te maken."});
+      t+=" "+u;if(M.moves.length)p.adjw[w0]={vraag:n+" op "+DL[i]+" (zwaar)",uitleg:u,dagen:[...ch]}}}
+  else if(z==="gemiddeld")t+=" Je ziet bij die dag de training en je kiest zelf.";else t+=" Je training van die dag blijft staan.";
+  p.oth[d]={n,z};OTHOPEN=null;OTHMSG={d,t};save()}
+$("pgoal").addEventListener("toggle",()=>{if($("pgoal").classList.contains("noexp"))return;try{localStorage.setItem("td-pgoal",$("pgoal").open?"1":"0")}catch(e){}});
 function plan(){const a=A(),p=a.p,cp=cPlanned(p),ext=p.src==="coachbox"||p.src==="ics"||cp,PH=ext?[]:phasesOf(p),A0=PH.length?PH[0].a:p.start,Z=PH.length?PH[PH.length-1].b:add(p.start,7*16),T=Math.max(1,diff(A0,Z)+1);
   const up=(p.races||[]).filter(r=>r.d&&r.d>=TODAY).sort((x,y)=>x.d<y.d?-1:1),g=up.find(r=>r.t==="A")||up[0];
   $("ptitle").textContent=g?"Op weg naar "+(g.n||"je wedstrijd")+(g.w?" "+g.w:""):"Je plan";
   const pos=Math.max(0,Math.min(100,(diff(A0,TODAY)+.5)/T*100));
   $("phases").innerHTML=PH.map(ph=>'<div title="'+esc(ph.n+", "+fmt(ph.a)+" tot "+fmt(ph.b))+'" style="background:'+ph.c+';color:'+ph.f+';width:'+((diff(ph.a,ph.b)+1)/T*100)+'%">'+esc(ph.n)+'</div>').join("")+(PH.length?'<span class="pnow" style="left:'+pos+'%" title="Vandaag"></span>':'');
   $("plegend").innerHTML=PH.length?PH.map(ph=>'<div'+(TODAY>=ph.a&&TODAY<=ph.b?' style="font-weight:600"':'')+'><i style="background:'+ph.c+'"></i><b>'+esc(ph.n)+'</b>, '+fy(ph.a)+' tot '+fy(ph.b)+(TODAY>=ph.a&&TODAY<=ph.b?' (nu)':'')+'<br><span class="note">'+esc(ph.t)+'</span></div>').join(""):'<p class="note">Voeg je wedstrijden toe bij Instellingen, dan deelt het plan je seizoen op in basis, opbouw, taper en herstel.</p>';
-  $("phases").hidden=ext;$("plegend").hidden=ext;$("psrc").hidden=!ext;
+  $("phases").hidden=ext;$("plegend").hidden=ext;
+  {const pg=$("pgoal");pg.classList.toggle("noexp",ext||!PH.length);let o=false;try{o=localStorage.getItem("td-pgoal")==="1"}catch(e){}pg.open=!ext&&PH.length&&o;
+    const cur=PH.find(ph=>TODAY>=ph.a&&TODAY<=ph.b);$("pnowl").textContent=!ext&&cur?"Nu: "+cur.n.toLowerCase()+", tot "+fmt(cur.b):"";}$("psrc").hidden=!ext;
   if(cp)$("psrc").innerHTML=p.rol==="gecoacht"?'<b>Je schema komt van coach '+esc(short(nameOf(p.coachId||"m3")))+'.</b> Je coach bepaalt de opbouw; je ziet de trainingen met je zones en voeding erbij. Vragen of iets veranderen? Stuur je coach hieronder een bericht.'+(p.cnote&&p.cnote[mon(TODAY)]?'<div class="cnote" style="margin:10px 0 0"><b>Deze week:</b> '+esc(p.cnote[mon(TODAY)])+'</div>':'')+((p.cpub||{})[add(mon(TODAY),7)]?'':'<p class="note" style="margin-top:8px">Je schema voor volgende week komt nog: je krijgt een melding zodra je coach het klaarzet.</p>')+'<br><span class="note">In de demo is je coach fictief.</span>':'<b>Je volgt je eigen schema.</b> Je vult je weken in bij Coach, bovenaan de lijst bij "Jij".';
   else if(ext)$("psrc").innerHTML=p.src==="coachbox"?'<b>Je plan komt uit Coachbox.</b> Je coach bepaalt de opbouw; hier zie je je trainingen met je zones en voeding erbij. Iets veranderen? Vraag het aan je coach in Coachbox.<br><span class="note">In de demo zijn dit voorbeeldtrainingen; in de echte versie staan hier de trainingen van je coach.</span>':'<b>Je plan komt uit je agenda-link.</b> Je ziet de komende 14 dagen, met je zones en voeding erbij. Veranderen doe je in je eigen app.<br><span class="note">In de demo zijn dit voorbeeldtrainingen'+(p.ics?'':'. Plak je agenda-link bij Instellingen')+'.</span>';
   adaptR();rampR();
   const s0=mon(p.start),w0=add(mon(TODAY),-7)>s0?add(mon(TODAY),-7):s0,cpl=cp?Object.keys(p.cplan||{}).sort().pop():null,last=cp?mon(add(cpl&&cpl>TODAY?cpl:TODAY,7)):mon(add(Z,7));let h="",n=0;
   for(let w=w0;w<=last&&n<pN;w=add(w,7),n++){const end=add(w,6),now=TODAY>=w&&TODAY<=end,ph=phaseOn(p,add(w,3)),wi=Math.floor(diff(s0,w)/7)+1;let tot=0;const KM={};
     const ds=DN.map((dn,i)=>{const dd=add(w,i),x=session(p,dd),f=fuel(p,x,dd),done=dd<=TODAY&&a.log.some(l=>l.datum===dd);if(x&&x.min&&x.k!=="rust")tot+=x.min;if(x&&x.km&&x.k!=="rust"&&x.k!=="race")KM[x.sp]=(KM[x.sp]||0)+x.km;
-      return'<div class="day'+(dd===TODAY?" is":"")+(x&&x.k==="race"?" race":"")+'"><span class="k">'+dn+' '+fmt(dd)+'</span><b><span class="sd '+(!x||x.k==="rust"?"rest":sk(x.sp))+'"></span>'+esc(x?x.s:"—")+'</b>'+(x&&tk(x)?'<span>'+esc(tk(x))+'</span>':'')+(x&&x.z?'<em>'+esc(x.z)+'</em>':'')+(f&&f.mee?'<span class="fl">Voeding: '+f.c[0]+' koolhydraten · '+f.n[0]+' natrium · '+f.d[1]+'</span>':'')+(x&&x.adj?'<span class="adjl">Aangepast op jouw vraag</span>':'')+(done?'<span class="dn">✓ gedaan</span>':'')+(!ext&&x?sxH(p,dd,x):'')+(x?sfbH(p,dd,x):'')+'</div>'}).join("");
+      return'<div class="day'+(dd===TODAY?" is":"")+(x&&x.k==="race"?" race":"")+'"><span class="k">'+dn+' '+fmt(dd)+'</span><b><span class="sd '+(!x||x.k==="rust"?"rest":sk(x.sp))+'"></span>'+esc(x?x.s:"—")+'</b>'+(x&&tk(x)?'<span>'+esc(tk(x))+'</span>':'')+(x&&x.z?'<em>'+esc(x.z)+'</em>':'')+(f&&f.mee?'<span class="fl">Voeding: '+f.c[0]+' koolhydraten · '+f.n[0]+' natrium · '+f.d[1]+'</span>':'')+(x&&x.adj?'<span class="adjl">Aangepast op jouw vraag</span>':'')+(done?'<span class="dn">✓ gedaan</span>':'')+(!ext&&x?sxH(p,dd,x):'')+(x?sfbH(p,dd,x):'')+(!ext&&dd>=TODAY&&dd<=add(TODAY,27)&&x&&x.k!=="race"?othH(p,dd):'')+'</div>'}).join("");
     h+='<article class="week'+(now?" now":"")+'"><h3>Week '+isoWk(w)+' <small>'+fmt(w)+' tot '+fmt(end)+(ph?', '+esc(ph.n.toLowerCase()):'')+(kmSum(KM)?', '+kmSum(KM):(tot?', '+dur(tot):''))+'</small></h3><p class="note" style="margin-top:4px">'+esc(weekFocus(p,w))+'</p>'+(!ext?weekOv(p,w):'')+'<div class="days">'+ds+'</div></article>'}
   $("weeks").innerHTML=h||'<p class="note">Nog geen weken in je plan.</p>';$("pmore").hidden=add(w0,pN*7)>last}
 /* ---------- exacte onderdelen per training ---------- */
@@ -2002,7 +2048,8 @@ function swimParse(p,x){const c=ss(p.css||"2:00"),P=paceOf(p),L=String(x.z||"").
     pr.push({k:/^Opwarming|opwarming/.test(l)?"wu":/^Techniek/.test(l)?"tech":/^Los|heel rustig$/.test(l)?"cd":"kern",t:l,km:S.m/1000,min:(S.m/100*pc+rs)/60})});
   return pr}
 // ontleed een training; ok = optelsom bruikbaar
-function sParse(p,x){if(!x||!x.z||x.k==="rust"||x.k==="race")return null;let pr;try{pr=x.sp==="lopen"?runParse(p,x):x.sp==="fietsen"?bikeParse(p,x):x.sp==="zwemmen"?swimParse(p,x):null}catch(e){return null}if(!pr)return null;
+function sParse(p,x){if(!x||!x.z||x.k==="rust"||x.k==="race")return null;
+  {const XN=/^(Ook op je planning:|Of in de plaats:|Verplaatst van )/,L=String(x.z).split("\n");if(L.some(l=>XN.test(l))){const R=sParse(p,Object.assign({},x,{z:L.filter(l=>!XN.test(l)).join("\n")}));if(R)L.filter(l=>XN.test(l)).forEach(l=>R.pr.push({k:"note",t:l}));return R}}let pr;try{pr=x.sp==="lopen"?runParse(p,x):x.sp==="fietsen"?bikeParse(p,x):x.sp==="zwemmen"?swimParse(p,x):null}catch(e){return null}if(!pr)return null;
   const main=pr.filter(q=>q.k!=="note"&&q.k!=="extra"),km=main.reduce((a,q)=>a+(q.km||0),0),mn=main.reduce((a,q)=>a+(q.min||0),0),ex=pr.filter(q=>q.k==="extra");
   return{pr,km,min:mn,ex,ok:main.length>0&&km>0&&(!x.km||km>=x.km*.5&&km<=x.km*1.8)}}
 const PLAB={wu:"Warming-up",tech:"Techniek",kern:"Kern",rec:"Herstel",cd:"Cooling-down",extra:"Daarna"};
@@ -2384,7 +2431,7 @@ function zonesR(){try{labUI()}catch(e){}const p=A().p,z=zones(p),na=+p.na||0,pro
 /* ---------- Vandaag: kaarten die open- en dichtschuiven ---------- */
 const VST=(()=>{try{return JSON.parse(localStorage.getItem("td-vopen")||"{}")||{}}catch(e){return{}}})();
 function vOpenQ(k){const st=VST[k];if(k==="herst"){const c=(A().check||{})[TODAY]||{};if(c.en==null&&c.sp==null&&!(st&&st.d===TODAY)){VST.herst={o:true,d:TODAY};try{localStorage.setItem("td-vopen",JSON.stringify(VST))}catch(e){}return true}}return!!(st&&st.o)}
-function vSet(b,o){b.setAttribute("aria-expanded",o);const c=b.closest(".vc"),body=$(b.getAttribute("aria-controls"));c.classList.toggle("open",o);if(body)body.inert=!o}
+function vSet(b,o){b.setAttribute("aria-expanded",o);const c=b.closest(".vc"),body=$(b.getAttribute("aria-controls"));if(body&&body.classList.contains("vb2"))body.classList.toggle("vbo",o);else c.classList.toggle("open",o);if(body)body.inert=!o}
 function vApply(){document.querySelectorAll("#v-vandaag .vt[data-vt]").forEach(b=>vSet(b,vOpenQ(b.dataset.vt)))}
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#v-vandaag .vt[data-vt]");if(!b)return;const o=b.getAttribute("aria-expanded")!=="true";VST[b.dataset.vt]={o,d:TODAY};try{localStorage.setItem("td-vopen",JSON.stringify(VST))}catch(e){}vSet(b,o)});
 document.addEventListener("click",e=>{const x=e.target.closest&&e.target.closest("a[data-anday]");if(!x)return;VST.ana={o:true,d:TODAY};const b=document.querySelector('#v-vandaag .vt[data-vt=ana]');if(b)vSet(b,true)},true);
@@ -2412,7 +2459,7 @@ function vSum(){const a=A();if(!a||!a.p||!$("vHead"))return;const p=a.p,h=new Da
       set("vAmeta",'<b>'+[kmOk(l)?(l.sport==="zwemmen"?Math.round(l.km*1000)+" m":kmS(l.km)):"",l.min?dur(l.min):""].filter(Boolean).join(" · ")+'</b>'+(l.hr?" · gem. "+l.hr+" bpm":"")+(l.w?" · "+l.w+" W":""),1);
       set("vAverd",cap(ci>0?ti.slice(ci+2):r.tag));$("vAverd").className="vverd o-"+r.o;
       set("vArpe",l.rpe?'<b>Gevoelscore</b> · '+l.rpe+'/5':S2.own||S2.L.length?'Hoe zwaar voelde het? Geef een score in de analyse.':'',1)}}
-  vApply()}
+  adaptR(1);vApply()}
 {const w=f=>function(){const r=f.apply(this,arguments);try{vSum()}catch(e){console.error(e)}return r};hero=w(hero);anaR=w(anaR);weekR=w(weekR);feelR=w(feelR);metricsR=w(metricsR);who=w(who)}
 /* ---------- "Waar": aanvullen terwijl je typt ---------- */
 const AC_SEL=".ob-rw,.r-w,#e-p,#p-p,.ev-w",ACC=new Map();let AC={inp:null,list:[],act:-1,t:null,ab:null,sess:"",skip:false};
@@ -2602,12 +2649,18 @@ $("wtoday").addEventListener("click",()=>{sel=TODAY;sw0=mon(TODAY);strip();hero(
 let clr=0;$("s-clear").addEventListener("click",e=>{if(!clr){clr=1;e.target.textContent="Klik nog eens om te bevestigen";setTimeout(()=>{clr=0;e.target.textContent="Opnieuw instellen"},4000);return}
   clr=0;e.target.textContent="Opnieuw instellen";A().onb=false;obReset();save();location.hash="#vandaag";route()});
 $("goals").addEventListener("click",e=>{const a=e.target.closest("[data-goto]");if(!a)return;e.preventDefault();location.hash="#instellingen"+(catOf(a.dataset.goto)?"/"+catOf(a.dataset.goto):"");setTimeout(()=>{const el=$(a.dataset.goto);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})},60)});
-$("v-plan").addEventListener("submit",async e=>{if(e.target.id!=="af")return;e.preventDefault();const t=$("a-t").value.trim();if(!t)return;const b=$("a-b");b.disabled=true;$("amsg").textContent="Even je week bekijken…";
+document.addEventListener("submit",async e=>{if(e.target.id!=="af")return;e.preventDefault();const t=$("a-t").value.trim();if(!t)return;const b=$("a-b");b.disabled=true;$("amsg").textContent="Even je week bekijken…";
   try{const off=+$("a-w").value,q=wkAsk(t,add(mon(TODAY),off));let r=null;
     if(!q.other&&(q.no.length||q.yes.length))r=adaptLocal(t,off,q)||{msg:"Ik zie geen dagen om aan te passen in die week."};
     else if(SMP)r=await adaptGo(t,off);
     else r={msg:"Dat kan ik niet zonder AI. Schrijf het zo: \"dinsdag en donderdag geen tijd\"."};all();$("amsg").textContent=r?r.msg:"";}catch(err){$("amsg").textContent=aiMsg(err,"Dat lukte niet. Probeer het straks opnieuw.")}finally{const bb=$("a-b");if(bb)bb.disabled=false}});
-$("v-plan").addEventListener("click",e=>{const b=e.target.closest("[data-undo]");if(!b)return;const p=A().p,w=b.dataset.undo,j=p.adjw&&p.adjw[w];if(!j)return;(j.dagen||[]).forEach(d=>{if(p.ov)delete p.ov[d]});delete p.adjw[w];save();all()});
+$("v-plan").addEventListener("click",e=>{const t=e.target.closest("[data-oth],[data-othdel],[data-othsave],[data-othx]");if(!t)return;const p=A().p;
+  if(t.dataset.oth){OTHOPEN=t.dataset.oth;OTHMSG=null;plan();const f=document.querySelector('.othf[data-othd="'+OTHOPEN+'"] .oth-n');if(f)f.focus();return}
+  if(t.dataset.othx){OTHOPEN=null;plan();return}
+  if(t.dataset.othdel){const d=t.dataset.othdel;if(p.oth)delete p.oth[d];OTHMSG={d,t:"Andere sport verwijderd."+(p.adjw&&p.adjw[mon(d)]?" Verplaatste trainingen zet je terug bij Vandaag, onder Ziet je week er anders uit.":"")};save();all();return}
+  if(t.dataset.othsave){const d=t.dataset.othsave,f=t.closest(".othf");othSave(d,f.querySelector(".oth-n").value,f.querySelector(".oth-z").value);all()}});
+$("v-plan").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("oth-n")){e.preventDefault();const f=e.target.closest(".othf");othSave(f.dataset.othd,e.target.value,f.querySelector(".oth-z").value);all()}});
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-undo]");if(!b)return;const p=A().p,w=b.dataset.undo,j=p.adjw&&p.adjw[w];if(!j)return;(j.dagen||[]).forEach(d=>{if(p.ov)delete p.ov[d]});delete p.adjw[w];save();all()});
 $("srcs").addEventListener("change",()=>{const v=(document.querySelector('input[name=src]:checked')||{}).value;$("icswrap").hidden=!(v==="ics"||v==="coachbox")});
 $("rol").addEventListener("change",e=>{if(e.target.name==="rol")renderSrcs(e.target.value,(document.querySelector('input[name=src]:checked')||{}).value)});
 $("labf").addEventListener("change",e=>{const fs=[...(e.target.files||[])];e.target.value="";if(fs.length&&SMP)labRead(fs)});
