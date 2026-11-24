@@ -351,6 +351,10 @@ table.laps{margin:2px 0 14px;font-variant-numeric:tabular-nums}.laps caption{tex
 .adapt .f{margin-top:12px}#a-b{grid-column:span 2}.adone{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:15px}.adone p{flex:1;min-width:220px}
 .day button.lnk{background:none;border:0;padding:2px 0;min-height:0;width:auto;color:var(--ink);font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;box-shadow:none;border-radius:0}
 .othb{display:inline-block;margin-top:8px}
+.hoth{margin-top:10px}.hoth:empty{display:none}
+.hoth button.lnk{background:none;border:0;padding:2px 0;min-height:0;width:auto;color:var(--ink);font-size:14px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;box-shadow:none;border-radius:0}
+.hoth button.lnk.othb{border:1px dashed var(--line);border-radius:10px;padding:8px 14px;text-decoration:none;background:var(--card)}
+.hoth .othf{max-width:420px}
 .day button.lnk.othb{border:1px dashed var(--line);border-radius:10px;padding:7px 12px;text-decoration:none;background:var(--card)}
 .day button.lnk.othb:hover{border-color:var(--ink)}
 .pwnav{display:flex;align-items:center;gap:10px}.pwnav h3{flex:1;margin:0;text-align:center}.pwnav .wnav2{flex:none;width:46px;min-height:46px;padding:0;border-radius:12px}
@@ -599,6 +603,7 @@ p.cmorn{display:block}
           <p class="hlab" id="hlab">Op het plan</p>
           <div class="hsess"><span class="hbig" id="hbig"></span><span class="hdur" id="hdur"></span></div>
         </div>
+        <div class="hoth" id="hoth"></div>
         <button type="button" class="vt" data-vt="plan" aria-expanded="false" aria-controls="vb-plan"><i class="vchev" aria-hidden="true"></i><span>Trainingsblokken, zones en voeding</span></button>
         <div class="vb" id="vb-plan"><div class="vbi">
           <p class="htarget" id="htarget"></p>
@@ -1579,7 +1584,9 @@ function zoneChips(p,x,kleur){if(!x||x.k==="rust"||x.k==="race")return[];const Z
   else if(x.sp==="fietsen")c=/sweet|lange blokken/.test(n)?[B(1),B(2),B(3)]:/vo2/.test(n)?[B(1),B(4)]:/piramide/.test(n)?[B(1),B(2),B(3),B(4)]:/tempo/.test(n)?[B(1),B(2)]:/test/.test(n)?[B(3),B(4)]:[B(1)];
   else if(x.sp==="zwemmen")c=/test/.test(n)?[]:[Sw(1),Sw(3)].concat(/lopen/.test(n)?[R(1)]:[]);
   if(kleur==="oranje")c=c.filter(z=>z[0]<=1);return c}
-function hero(){const a=A(),p=a.p,d=sel,isT=d===TODAY,x=session(p,d),j=isT?judge(p,mState(a,d)):null,L=a.log.filter(l=>l.datum===d);
+function hero(){heroX();hothR()}
+function hothR(){const box=$("hoth");if(!box)return;const p=A().p,ext=p.src==="coachbox"||p.src==="ics"||cPlanned(p);if(ext||!p.start||sel<TODAY){box.innerHTML="";return}const x=session(p,sel);box.innerHTML=x&&x.k!=="race"?othH(p,sel):""}
+function heroX(){const a=A(),p=a.p,d=sel,isT=d===TODAY,x=session(p,d),j=isT?judge(p,mState(a,d)):null,L=a.log.filter(l=>l.datum===d);
   $("hero").className="hero "+(j?j.kleur:"");$("hdate").textContent=isT?"Vandaag, "+long(d):long(d).replace(/^./,m=>m.toUpperCase());
   $("hverdict").textContent=isT?(j.kleur==="groen"?"Groen: train zoals gepland":j.kleur==="oranje"?"Oranje: korter en rustiger":"Rood: rust of heel rustig"):d<TODAY?(L.length?"Gedaan":"Niets in je logboek"):"Gepland";
   $("hlab").innerHTML=""+(x&&x.src==="coach"?'<span class="srcl">van je coach</span>':x&&x.src==="eigen"?'<span class="srcl">eigen schema</span>':p.src==="coachbox"?'<span class="srcl">uit Coachbox</span>':p.src==="ics"?'<span class="srcl">uit je agenda-link</span>':'')+(x&&x.adj?'<span class="srcl">aangepast</span>':'')+(x&&GL(p)&&p.push&&d>=TODAY&&x.k!=="rust"&&x.k!=="race"&&!x.empty?'<span class="srcl">staat op je horloge</span>':'');
@@ -2663,12 +2670,12 @@ document.addEventListener("submit",async e=>{if(e.target.id!=="af")return;e.prev
     if(!q.other&&(q.no.length||q.yes.length))r=adaptLocal(t,off,q)||{msg:"Ik zie geen dagen om aan te passen in die week."};
     else if(SMP)r=await adaptGo(t,off);
     else r={msg:"Dat kan ik niet zonder AI. Schrijf het zo: \"dinsdag en donderdag geen tijd\"."};all();$("amsg").textContent=r?r.msg:"";}catch(err){$("amsg").textContent=aiMsg(err,"Dat lukte niet. Probeer het straks opnieuw.")}finally{const bb=$("a-b");if(bb)bb.disabled=false}});
-$("v-plan").addEventListener("click",e=>{const t=e.target.closest("[data-oth],[data-othdel],[data-othsave],[data-othx]");if(!t)return;const p=A().p;
-  if(t.dataset.oth){OTHOPEN=t.dataset.oth;OTHMSG=null;plan();const f=document.querySelector('.othf[data-othd="'+OTHOPEN+'"] .oth-n');if(f)f.focus();return}
-  if(t.dataset.othx){OTHOPEN=null;plan();return}
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("#v-plan [data-oth],#v-plan [data-othdel],#v-plan [data-othsave],#v-plan [data-othx],#hoth [data-oth],#hoth [data-othdel],#hoth [data-othsave],#hoth [data-othx]");if(!t)return;const p=A().p;
+  if(t.dataset.oth){OTHOPEN=t.dataset.oth;OTHMSG=null;plan();hothR();const f=[...document.querySelectorAll('.othf[data-othd="'+OTHOPEN+'"] .oth-n')].find(x=>x.offsetParent);if(f)f.focus();return}
+  if(t.dataset.othx){OTHOPEN=null;plan();hothR();return}
   if(t.dataset.othdel){const d=t.dataset.othdel;if(p.oth)delete p.oth[d];OTHMSG={d,t:"Andere sport verwijderd."+(p.adjw&&p.adjw[mon(d)]?" Verplaatste trainingen zet je terug bij Vandaag, onder Ziet je week er anders uit.":"")};save();all();return}
   if(t.dataset.othsave){const d=t.dataset.othsave,f=t.closest(".othf");othSave(d,f.querySelector(".oth-n").value,f.querySelector(".oth-z").value);all()}});
-$("v-plan").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("oth-n")){e.preventDefault();const f=e.target.closest(".othf");othSave(f.dataset.othd,e.target.value,f.querySelector(".oth-z").value);all()}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("oth-n")){e.preventDefault();const f=e.target.closest(".othf");othSave(f.dataset.othd,e.target.value,f.querySelector(".oth-z").value);all()}});
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-undo]");if(!b)return;const p=A().p,w=b.dataset.undo,j=p.adjw&&p.adjw[w];if(!j)return;(j.dagen||[]).forEach(d=>{if(p.ov)delete p.ov[d]});delete p.adjw[w];save();all()});
 $("srcs").addEventListener("change",()=>{const v=(document.querySelector('input[name=src]:checked')||{}).value;$("icswrap").hidden=!(v==="ics"||v==="coachbox")});
 $("rol").addEventListener("change",e=>{if(e.target.name==="rol")renderSrcs(e.target.value,(document.querySelector('input[name=src]:checked')||{}).value)});
