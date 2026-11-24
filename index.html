@@ -378,6 +378,7 @@ table.laps{margin:2px 0 14px;font-variant-numeric:tabular-nums}.laps caption{tex
 .vb2[hidden],.vt[hidden]{display:none}
 .adapt2 .f{margin-top:8px}
 @media(prefers-reduced-motion:reduce){.vb2{transition:none}}
+.lida button.lidx{color:light-dark(#a82a20,#f2847a)}.lida button.lidx.warn{border-color:currentColor;font-weight:700}
 .adjl{display:inline-block;margin-top:6px;font-size:12.5px;font-weight:700;color:light-dark(#a35f00,#f6b75a)}
 .srcl{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 9px;border-radius:12px;background:color-mix(in srgb,currentColor 12%,transparent);margin-left:6px;vertical-align:1px}
 /* labverslag */
@@ -2758,8 +2759,19 @@ function ledenR(){const box=$("leden");if(!PROF||!PROF.is_admin){box.hidden=true
     (!act?'<button type="button" data-la="ok">Goedkeuren</button>':'')+(m.status==="wacht"?'<button type="button" class="ghost" data-la="nee">Weigeren</button>':'')+
     (act&&m.rol==="coach"&&!m.coach_ok?'<button type="button" data-la="cok">Coach goedkeuren</button>':'')+(act&&m.rol==="coach"&&m.coach_ok&&!me?'<button type="button" class="ghost" data-la="cnok">Coachrol intrekken</button>':'')+
     (act&&m.rol!=="coach"?'<label class="lidc">Coach<select data-la="coach"><option value="">geen</option>'+cs.filter(c=>c.id!==m.id).map(c=>'<option value="'+c.id+'"'+(m.coach_id===c.id?" selected":"")+'>'+esc(c.naam)+'</option>').join("")+'</select></label>':'')+
-    (act&&!me?'<button type="button" class="ghost" data-la="'+(m.is_admin?"noadm":"adm")+'">'+(m.is_admin?"Geen beheerder meer":"Maak beheerder")+'</button>':'')+'</div></div>'}).join("")}
+    (act&&!me?'<button type="button" class="ghost" data-la="'+(m.is_admin?"noadm":"adm")+'">'+(m.is_admin?"Geen beheerder meer":"Maak beheerder")+'</button>':'')+
+    (!me&&!m.is_admin?'<button type="button" class="ghost lidx" data-la="del">Uit de club zetten</button>':'')+'</div></div>'}).join("")}
 async function updMember(id,u){$("ledenMsg").textContent="Bezig…";const r=await sb.from("profiles").update(u).eq("id",id).select().single();if(r.error){$("ledenMsg").textContent="Niet gelukt. Probeer opnieuw.";console.error(r.error);return}$("ledenMsg").textContent="Bewaard.";await softReload();if(!/^#instellingen\//.test(location.hash))location.hash="#instellingen/beheer"}
+let DELC=null;
+const DELE={beheerder:"Een beheerder kun je niet uit de club zetten. Trek eerst zijn beheerdersrol in.",jezelf:"Jezelf kun je niet uit de club zetten.",geen_beheerder:"Enkel een beheerder kan iemand uit de club zetten.",niet_ingelogd:"Je bent niet meer ingelogd. Log opnieuw in."};
+$("ledenL").addEventListener("click",async e=>{const b=e.target.closest("button[data-la=del]");if(!b)return;const id=b.closest("[data-mid]").dataset.mid,nm=(MEMBERS.find(m=>m.id===id)||{}).naam||"Dit lid",msg=$("ledenMsg");
+  if(DELC!==id){DELC=id;b.textContent="Zeker? Klik nog eens";b.classList.add("warn");msg.textContent=nm+" uit de club zetten wist het account en alle gegevens: dagboek, schema en berichten. Dit kan niet ongedaan worden. Klik nog eens om te bevestigen.";
+    setTimeout(()=>{if(DELC!==id)return;DELC=null;const x=document.querySelector('#ledenL [data-mid="'+id+'"] [data-la=del]');if(x){x.textContent="Uit de club zetten";x.classList.remove("warn")}if(msg.textContent.includes("Klik nog eens"))msg.textContent=""},8000);return}
+  DELC=null;b.disabled=true;msg.textContent="Bezig…";
+  try{const {data:{session}}=await sb.auth.getSession();const r=await fetch(CFG.url+"/functions/v1/lid",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+(session?session.access_token:""),apikey:CFG.key},body:JSON.stringify({id})});const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.ok){msg.textContent=DELE[j.error]||"Niet gelukt. Probeer opnieuw.";b.disabled=false;b.textContent="Uit de club zetten";b.classList.remove("warn");return}
+    await softReload();msg.textContent=nm+" is uit de club gezet. Het account en de gegevens zijn gewist. Wil die persoon terugkomen, dan maakt hij opnieuw een account en keur je hem opnieuw goed.";if(!/^#instellingen\//.test(location.hash))location.hash="#instellingen/beheer"}
+  catch(err){console.error(err);msg.textContent="Niet gelukt. Probeer opnieuw.";b.disabled=false;b.textContent="Uit de club zetten";b.classList.remove("warn")}});
 $("ledenL").addEventListener("click",e=>{const b=e.target.closest("button[data-la]");if(!b)return;const id=b.closest("[data-mid]").dataset.mid,u={ok:{status:"actief"},nee:{status:"geweigerd"},cok:{coach_ok:true},cnok:{coach_ok:false},adm:{is_admin:true},noadm:{is_admin:false}}[b.dataset.la];if(u)updMember(id,u)});
 $("ledenL").addEventListener("change",e=>{const s=e.target.closest("select[data-la=coach]");if(!s)return;updMember(s.closest("[data-mid]").dataset.mid,s.value?{coach_id:s.value,rol:"gecoacht"}:{coach_id:null})});
 /* ---------- starten ---------- */
