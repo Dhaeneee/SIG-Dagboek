@@ -142,7 +142,8 @@ details.set summary{font-weight:700;font-size:18px;cursor:pointer}
 .scats{display:grid;gap:10px;margin-top:6px}
 details.sx,details.wov{margin-top:8px;font-size:15px}details.sx summary,details.wov summary{cursor:pointer;font-weight:600;color:var(--ink)}
 details.wov{border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:10px 0}
-details.sx h4{font-size:15px;margin:12px 0 4px}details.sx p,details.wov p{margin:4px 0}.sxl{margin:4px 0;padding-left:18px}.sxl li{margin:3px 0}
+details.sx h4{font-size:15px;margin:12px 0 4px}
+.ptab{width:100%;border-collapse:collapse;font-size:14px;margin:4px 0}.ptab th,.ptab td{text-align:left;vertical-align:top;padding:5px 6px;border-bottom:1px solid var(--line)}.ptab thead th{color:var(--mute);font-weight:600;font-size:13px}.ptab td:nth-child(2),.ptab td:nth-child(3){white-space:nowrap}details.sx p,details.wov p{margin:4px 0}.sxl{margin:4px 0;padding-left:18px}.sxl li{margin:3px 0}
 .scat{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:18px;padding:14px 16px;color:var(--ink);text-decoration:none}
 .scat:hover{border-color:var(--mute)}.scat:focus-visible{outline:2px solid var(--legati-or);outline-offset:2px}
 .scat svg{flex:none;width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:var(--legati-or)}
@@ -1163,7 +1164,10 @@ function tline(p,x,l){const run=x.sp==="lopen"?!TNOTE.test(l):/\blopen\b/.test(l
 function tidy(p,x){if(!x||x.td||x.empty||x.k==="race")return x;x.td=1;
   let L=String(x.z||"").split("\n").filter(l=>!/^(Daarna )?Kracht\b|mobiliteit|zwemspieren|elastiek/i.test(l));
   if(x.k!=="rust"){L=L.map(l=>tline(p,x,l));if(x.sp==="lopen"&&L.some(l=>/\/km/.test(l)))L.push("Tempo's zijn een richtpunt, je hartslag gaat voor.")}
-  x.z=L.join("\n")||(x.k==="rust"?"Rustdag.":"");return x}
+  x.z=L.join("\n")||(x.k==="rust"?"Rustdag.":"");
+  const R=sParse(p,x);if(R&&R.ok){const k0=x.km,km=x.sp==="zwemmen"?Math.round(R.km*20)/20:x.sp==="fietsen"?Math.round(R.km):Math.round(R.km*10)/10;x.km=km;x.min=Math.round(R.min+(R.ex.reduce((a,q)=>a+q.min,0)));
+    if(x.t&&k0)x.t=String(x.t).replace(/^[\d.,]+ km/,x.sp==="zwemmen"?String(km).replace(".",",")+" km":kmTxt(km))}
+  return x}
 function kortSes(p,G,m,w,vi,rf){const a=+p.lt1||150,b=+p.lt2||a+15,IS=p.intens.lo&&G.strides,IT=p.intens.lo&&G.tempo,rec=w===3||w===7,Z2="onder "+(a-6)+" bpm",F1=(a-5)+"–"+(a+3)+" bpm",T1=(b-8)+"–"+(b-2)+" bpm",L=[];
   if(IS)L.push(["Lopen: versnellingen","Z2 · "+Z2+"\nOp het einde 6 × 20\" versnellingen: rustig opbouwen tot vlot, joggend herstel"]);
   L.push(["Lopen: cadans","10' inlopen "+Z2+"\n6 × 1' met korte, snelle passen (cadans 170+), tempo blijft "+Z2+"\nRustig verder "+Z2]);
@@ -1844,6 +1848,67 @@ function plan(){const a=A(),p=a.p,cp=cPlanned(p),ext=p.src==="coachbox"||p.src==
       return'<div class="day'+(dd===TODAY?" is":"")+(x&&x.k==="race"?" race":"")+'"><span class="k">'+dn+' '+fmt(dd)+'</span><b><span class="sd '+(!x||x.k==="rust"?"rest":sk(x.sp))+'"></span>'+esc(x?x.s:"—")+'</b>'+(x&&tk(x)?'<span>'+esc(tk(x))+'</span>':'')+(x&&x.z?'<em>'+esc(x.z)+'</em>':'')+(f&&f.mee?'<span class="fl">Voeding: '+f.c[0]+' koolhydraten · '+f.n[0]+' natrium · '+f.d[1]+'</span>':'')+(x&&x.adj?'<span class="adjl">Aangepast op jouw vraag</span>':'')+(done?'<span class="dn">✓ gedaan</span>':'')+(!ext&&x?sxH(p,dd,x):'')+'</div>'}).join("");
     h+='<article class="week'+(now?" now":"")+'"><h3>Week '+wi+' <small>'+fmt(w)+' tot '+fmt(end)+(ph?', '+esc(ph.n.toLowerCase()):'')+(kmSum(KM)?', '+kmSum(KM):(tot?', '+dur(tot):''))+'</small></h3><p class="note" style="margin-top:4px">'+esc(weekFocus(p,w))+'</p>'+(!ext?weekOv(p,w):'')+'<div class="days">'+ds+'</div></article>'}
   $("weeks").innerHTML=h||'<p class="note">Nog geen weken in je plan.</p>';$("pmore").hidden=add(w0,pN*7)>last}
+/* ---------- exacte onderdelen per training ---------- */
+const ssk=t=>{const m=String(t).match(/(\d+):(\d\d)/);return m?+m[1]*60+ +m[2]:0},kmv=(n,u)=>u==="km"?parseFloat(String(n).replace(",",".")):+n/1000;
+const kmD=v=>v>=.95?String(Math.round(v*10)/10).replace(".",",")+" km":Math.round(v*1000/50)*50+" m";
+function paceIn(l,P){const r=l.match(/(\d+:\d\d)–(\d+:\d\d)\/km/);if(r)return(ssk(r[1])+ssk(r[2]))/2;const s=l.match(/sneller dan (\d+:\d\d)\/km/);if(s)return ssk(s[1])-8;const t=l.match(/±(\d+:\d\d)\/km/);if(t)return ssk(t[1]);return 0}
+const PNOTE=/^Tempo's zijn|^Neem |^Noteer|^Spullen|^Gem\.|^Oefen|^Wandel|^Geen zwaar|^Druk na|^Focus:/;
+function runParse(p,x){const P=paceOf(p),L=String(x.z||"").split("\n").filter(Boolean),pr=[];let fix=0;
+  L.forEach((l,i)=>{let m;if(PNOTE.test(l)){pr.push({k:"note",t:l});return}const pc=paceIn(l,P)||P.easy,jg=l.match(/joggen \((\d+:\d\d)–(\d+:\d\d)\/km\)/),jp=jg?(ssk(jg[1])+ssk(jg[2]))/2:P.easy+45;
+    const lab=/inlopen|^\d[\d,]* k?m rustig/.test(l)&&!pr.some(q=>q.k==="kern")?"wu":/uitlopen|^Uitlopen|^Rustig verder/.test(l)&&i>0?"cd":"kern";
+    if((m=l.match(/(\d+) × (\d+(?:,\d+)?) (km|m)\b/))){const n=+m[1],d=kmv(m[2],m[3]),r=l.match(/telkens (\d+(?:,\d+)?) (km|m) joggen/),rd=r?kmv(r[1],r[2]):/joggend herstel/.test(l)?d:0;
+      pr.push({k:"kern",t:l,km:n*d,min:n*d*pc/60});fix+=n*d;if(rd&&n>1){pr.push({k:"rec",t:(n-1)+" × "+kmD(rd)+" joggen tussen de herhalingen (niet na de laatste)",km:(n-1)*rd,min:(n-1)*rd*jp/60});fix+=(n-1)*rd}return}
+    if((m=l.match(/(\d+) × (\d+)(['"])/))){const n=+m[1],sec=+m[2]*(m[3]==="'"?60:1),d=n*sec/pc;pr.push({k:"kern",t:l,km:d,min:n*sec/60,flex:/tempo blijft|Z2/.test(l)});fix+=d;return}
+    if((m=l.match(/^(\d+(?:,\d+)?) (km|m) /))){const d=kmv(m[1],m[2]);pr.push({k:lab,t:l,km:d,min:d*pc/60});fix+=d;return}
+    if((m=l.match(/^(\d+)' /))){const d=+m[1]*60/pc;pr.push({k:"kern",t:l,km:d,min:+m[1]});fix+=d;return}
+    pr.push({k:lab,t:l,flex:1,pc})});
+  const fl=pr.filter(q=>q.flex&&q.km==null),tot=x.km||0;let rest=Math.max(0,tot-fix);
+  if(!fl.length&&rest>.3){pr.push({k:"cd",t:"Uitlopen, rustig",flex:1,pc:P.easy});fl.push(pr[pr.length-1])}
+  // één gelijkmatig stuk: warming-up en cooling-down apart tonen
+  if(fl.length===1&&!pr.some(q=>q.k==="wu"||q.k==="cd")&&fl[0].k==="kern"&&tot>=3&&!pr.some(q=>q.km!=null&&q.k==="kern")){const w=Math.min(1.5,Math.round(tot*.2*2)/2),c=.5;
+    pr.splice(pr.indexOf(fl[0]),0,{k:"wu",t:"Eerste stuk rustiger, onderaan je zone",km:w,min:w*(fl[0].pc+15)/60});pr.push({k:"cd",t:"Uitbollen en wandelen",km:c,min:c*(fl[0].pc+30)/60});rest=Math.max(0,rest-w-c)}
+  fl.forEach(q=>{q.km=Math.max(.3,rest/fl.length);q.min=q.km*q.pc/60});
+  return pr}
+function bikeParse(p,x){const P=paceOf(p),v=Math.max(15,P.bike||25),L=String(x.z||"").split("\n").filter(Boolean),pr=[];let fix=0;const tot=Math.max(0,(x.min||0)-(x.bk||0));
+  L.forEach((l,i)=>{let m;if(PNOTE.test(l)||/^Eet |^Drink /.test(l)){pr.push({k:"note",t:l});return}
+    if(/lopen\b/.test(l)&&/Daarna/.test(l)){const k=l.match(/(\d+(?:,\d+)?) (km|m)/),d=k?kmv(k[1],k[2]):0;pr.push({k:"extra",t:l,km:d,min:d*P.easy/60});return}
+    if((m=l.match(/(\d+) × (\d+)(['"])/))){const n=+m[1],t=+m[2]/(m[3]==="'"?1:60),r=l.match(/telkens (\d+)(['"])/)||l.match(/(\d+)(['"]) rustig ertussen/),rt=r?+r[1]/(r[2]==="'"?1:60):0;
+      if(/^Elk |^Wissel /.test(l)){const q=pr.filter(z=>z.k==="kern").pop();if(q){q.t+=" · "+l;return}pr.push({k:"kern",t:l,flex:1});return}
+      pr.push({k:"kern",t:l,min:n*t});fix+=n*t;if(rt&&n>1){pr.push({k:"rec",t:(n-1)+" × "+rt+"' rustig trappen tussen de blokken (niet na het laatste)",min:(n-1)*rt});fix+=(n-1)*rt}return}
+    if((m=l.match(/^(\d+)' /))){pr.push({k:i===0?"wu":"kern",t:l,min:+m[1]});fix+=+m[1];return}
+    if(/^Elk |^Wissel /.test(l)){const q=pr.filter(z=>z.k==="kern").pop();if(q){q.t+=" · "+l;return}}
+    pr.push({k:/^Uitrijden|^Rest van de rit/.test(l)?"cd":"kern",t:l,flex:1})});
+  let fl=pr.filter(q=>q.flex),rest=Math.max(0,tot-fix);
+  if(!pr.some(q=>q.k==="wu")&&fl.length&&tot>=45){pr.unshift({k:"wu",t:"Soepel inrijden in Z1",min:15});rest-=15}
+  if(!pr.some(q=>q.k==="cd")&&tot>=45){pr.push({k:"cd",t:"Uitrijden in Z1",min:10,flex:fl.length?0:1});rest-=10;if(!fl.length){fl=[pr[pr.length-1]];rest+=10}}
+  // blijft er veel tijd over en is enkel het uitrijden vrij: rustig verder in Z2 en 10' uitrijden
+  if(fl.length===1&&fl[0].k==="cd"&&rest>20){const c=fl[0];pr.splice(pr.indexOf(c),0,{k:"kern",t:"Rustig verder in Z2 ("+zones(p).bike[1][2]+")",min:rest-10});c.min=10;fl=[]}
+  fl.forEach(q=>{q.min=Math.max(5,rest/fl.length)});pr.forEach(q=>{if(q.k!=="extra"&&q.k!=="note")q.km=q.min/60*v});return pr}
+function swimM(l){let t=l.replace(/\([^()]*\/100 m[^()]*\)/g,"").replace(/\d+:\d\d\/100 m/g,"").replace(/trager dan|sneller dan/g,""),m=0,n=0;
+  t=t.replace(/(\d+)\s*×\s*\(([^)]*)\)/g,(_,a,inner)=>{let s=0;inner.replace(/(\d+) m\b/g,(__,b)=>{s+=+b});m+=+a*s;n+=+a;return""});
+  t=t.replace(/(\d+)\s*×\s*(\d+) m\b/g,(_,a,b)=>{m+=+a*+b;n+=+a;return""});t.replace(/(\d+) m\b/g,(_,b)=>{m+=+b;n+=1});return{m,n}}
+function swimParse(p,x){const c=ss(p.css||"2:00"),P=paceOf(p),L=String(x.z||"").split("\n").filter(Boolean),pr=[];
+  L.forEach(l=>{if(PNOTE.test(l)&&!/^Focus/.test(l)){pr.push({k:"note",t:l});return}if(/^Focus/.test(l)){pr.push({k:"note",t:l});return}
+    if(/lopen\b/.test(l)&&/Daarna/.test(l)){const k=l.match(/(\d+(?:,\d+)?) (km|m)/),d=k?kmv(k[1],k[2]):0;pr.push({k:"extra",t:l,km:d,min:d*P.easy/60});return}
+    const S=swimM(l);if(!S.m){pr.push({k:"note",t:l});return}const R=l.match(/R(\d+)"/),rs=R?+R[1]*S.n:0,o=l.match(/CSS\+(-?\d+)/),pc=/^Opwarming|^Los|rustig|opwarming|heel rustig/.test(l)&&!o?c+15:/^Techniek/.test(l)?c+20:/^PB/.test(l)?c+10:/snel|voluit|climax/i.test(l)?c-3:o?c+ +o[1]:c+8;
+    pr.push({k:/^Opwarming|opwarming/.test(l)?"wu":/^Techniek/.test(l)?"tech":/^Los|heel rustig$/.test(l)?"cd":"kern",t:l,km:S.m/1000,min:(S.m/100*pc+rs)/60})});
+  return pr}
+// ontleed een training; ok = optelsom bruikbaar
+function sParse(p,x){if(!x||!x.z||x.k==="rust"||x.k==="race")return null;let pr;try{pr=x.sp==="lopen"?runParse(p,x):x.sp==="fietsen"?bikeParse(p,x):x.sp==="zwemmen"?swimParse(p,x):null}catch(e){return null}if(!pr)return null;
+  const main=pr.filter(q=>q.k!=="note"&&q.k!=="extra"),km=main.reduce((a,q)=>a+(q.km||0),0),mn=main.reduce((a,q)=>a+(q.min||0),0),ex=pr.filter(q=>q.k==="extra");
+  return{pr,km,min:mn,ex,ok:main.length>0&&km>0&&(!x.km||km>=x.km*.5&&km<=x.km*1.8)}}
+const PLAB={wu:"Warming-up",tech:"Techniek",kern:"Kern",rec:"Herstel",cd:"Cooling-down",extra:"Daarna"};
+const minD=m=>m>=60?Math.floor(m/60)+"u"+String(Math.round(m%60)).padStart(2,"0"):Math.max(1,Math.round(m))+"'";
+function partsH(p,x){const R=sParse(p,x);if(!R||!R.ok)return null;const sw=x.sp==="zwemmen",dv=q=>sw?Math.round(q.km*1000)+" m":kmD(q.km);
+  const rows=R.pr.filter(q=>q.k!=="note").map(q=>'<tr><th>'+PLAB[q.k]+'</th><td>'+(q.km?dv(q):"")+'</td><td>±'+minD(q.min||0)+'</td><td>'+esc(q.t)+'</td></tr>').join("");
+  const sum=R.pr.filter(q=>q.k!=="note"&&q.k!=="extra").map(q=>sw?Math.round(q.km*1000):String(Math.round(q.km*10)/10).replace(".",",")).join(" + ");
+  return'<table class="ptab"><thead><tr><th>Onderdeel</th><th>Afstand</th><th>Duur</th><th>Uitvoering</th></tr></thead><tbody>'+rows+'</tbody></table><p class="note">Optelsom: '+sum+' = <b>'+(sw?Math.round(R.km*1000)+" m":kmD(R.km))+'</b>, ±'+minD(R.min)+(sw?' (duur geschat, inclusief rusttijden)':' (duur geschat uit je tempo)')+'.'+(R.ex.length?' Het loopje erna komt daar nog bij.':'')+(sw?' Afstanden voor een bad van '+(p.pool||25)+' m. "R20"" betekent een vaste rust van 20" na elke herhaling, ook na de laatste van een reeks; er wordt niet op een startinterval gezwommen.':'')+'</p>'+R.pr.filter(q=>q.k==="note").map(q=>'<p class="note">'+esc(q.t)+'</p>').join("")}
+// lichtere variant en binnenvariant uit de onderdelen
+function lightH(p,x){const R=sParse(p,x);if(!R||!R.ok)return sLight(x);let km=0,mn=0;const ln=[];R.pr.forEach(q=>{if(q.k==="note"||q.k==="extra")return;
+    if(q.k==="kern"&&/(\d+) ×/.test(q.t)){const n=+q.t.match(/(\d+) ×/)[1],n2=Math.max(1,Math.floor(n*.7));km+=q.km*n2/n;mn+=q.min*n2/n;ln.push(q.t.replace(/(\d+) ×/,n2+" ×"))}else if(q.k==="rec"){const n=+(q.t.match(/^(\d+)/)||[0,1])[1];km+=q.km*.65;mn+=q.min*.65}else{km+=q.km*.75;mn+=q.min*.75}});
+  const sw=x.sp==="zwemmen";return(ln.length?ln.join("; ")+"; de rustige delen 25% korter. ":"Alle delen 25% korter. ")+"Totaal ±"+(sw?Math.round(km*10)*100+" m":kmD(km))+", ±"+minD(mn)+" (opnieuw berekend)."}
+function indoorH(p,x){if(x.sp!=="fietsen")return"";const R=sParse(p,x);if(!R||!R.ok)return"";let mn=0;R.pr.forEach(q=>{if(q.k==="kern"&&!q.flex||q.k==="rec")mn+=q.min;else if(q.k!=="note"&&q.k!=="extra")mn+=q.min*.75});
+  return" Binnen op de rollen: blokken en vermogens blijven gelijk, de rustige delen 25% korter (binnen trap je zonder stilvallen), totaal ±"+minD(mn)+"."}
 /* ---------- Planner: weekoverzicht en volledige uitwerking per sessie ---------- */
 const SPN2={lopen:"Lopen",fietsen:"Fietsen",zwemmen:"Zwemmen"};
 // soort training: [code, type, doel, aanwijzingen, gevoel, veelgemaakte fout, extra stopregel, alternatief]
@@ -1903,9 +1968,9 @@ function sxH(p,d,x){if(!x)return"";
   const dis=x.km?(x.sp==="zwemmen"?Math.round(x.km*1000)+" m":String(x.km).replace(".",",")+" km"):"";
   return'<details class="sx"><summary>Volledige uitwerking</summary>'
    +'<h4>A. Algemeen</h4><p><b>'+esc(M[1])+'</b> · '+esc(SPN2[x.sp]||"")+'. <b>Doel:</b> '+esc(M[2])+' <b>Waarom vandaag:</b> '+esc(sWhy(p,d,x,c))+'</p>'
-   +'<h4>B. Omvang en intensiteit</h4><p>'+(dis?'Afstand '+dis+' (gepland), ':'')+'duur ±'+dur(x.min||0)+' (geschat uit je tempo). <b>Primaire maat:</b> '+esc(prim)+' <b>Ervaren inspanning:</b> '+esc(RPEX[k])+'.</p>'
-   +'<h4>C. Uitvoering</h4><ul class="sxl">'+(P.wu.length?'<li><b>Warming-up:</b> '+esc(P.wu.join(" · "))+'</li>':'')+(P.tech.length?'<li><b>Techniek:</b> '+esc(P.tech.join(" · "))+'</li>':'')+'<li><b>Kern:</b><ul>'+li(P.kern)+'</ul></li>'+(P.cd.length?'<li><b>Cooling-down:</b> '+esc(P.cd.join(" · "))+'</li>':'')+'</ul>'+(x.sp==="zwemmen"?'<p class="note">Afstanden voor een bad van 25 m. "R15"" = vaste rust na elke herhaling.</p>':'')+(P.note.length?'<p class="note">'+esc(P.note.join(" "))+'</p>':'')
-   +'<h4>D. Coaching</h4><ul class="sxl"><li><b>Aanwijzing:</b> '+esc(M[3])+'</li><li><b>Gevoel:</b> '+esc(M[4])+'</li><li><b>Veelgemaakte fout:</b> '+esc(M[5])+'</li><li><b>Stoppen of verkorten:</b> bij pijn die erger wordt tijdens het bewegen, duizeligheid of ziekte (koorts, keelpijn met spierpijn: niet trainen). '+esc(M[6])+'</li><li><b>Lichtere variant:</b> '+esc(sLight(x))+'</li><li><b>Alternatief:</b> '+esc(M[7])+'</li></ul>'
+   +'<h4>B. Omvang en intensiteit</h4><p>'+(dis?'Afstand '+dis+' (gepland, som van de onderdelen), ':'')+'duur ±'+dur(x.min||0)+' (geschat uit je tempo'+(x.sp==="zwemmen"?' en de rusttijden':'')+'). <b>Primaire maat:</b> '+esc(prim)+' <b>Ervaren inspanning:</b> '+esc(RPEX[k])+'.</p>'
+   +'<h4>C. Uitvoering</h4>'+(partsH(p,x)||'<ul class="sxl">'+(P.wu.length?'<li><b>Warming-up:</b> '+esc(P.wu.join(" · "))+'</li>':'')+(P.tech.length?'<li><b>Techniek:</b> '+esc(P.tech.join(" · "))+'</li>':'')+'<li><b>Kern:</b><ul>'+li(P.kern)+'</ul></li>'+(P.cd.length?'<li><b>Cooling-down:</b> '+esc(P.cd.join(" · "))+'</li>':'')+'</ul>'+(P.note.length?'<p class="note">'+esc(P.note.join(" "))+'</p>':''))
+   +'<h4>D. Coaching</h4><ul class="sxl"><li><b>Aanwijzing:</b> '+esc(M[3])+'</li><li><b>Gevoel:</b> '+esc(M[4])+'</li><li><b>Veelgemaakte fout:</b> '+esc(M[5])+'</li><li><b>Stoppen of verkorten:</b> bij pijn die erger wordt tijdens het bewegen, duizeligheid of ziekte (koorts, keelpijn met spierpijn: niet trainen). '+esc(M[6])+'</li><li><b>Lichtere variant:</b> '+esc(lightH(p,x))+'</li><li><b>Alternatief:</b> '+esc(M[7]+indoorH(p,x))+'</li></ul>'
    +'<h4>E. Terugkoppeling</h4><p>Afstand, tijd, hartslag en vermogen komen uit Garmin. Vul in het logboek je gevoel (1 à 5) en eventuele pijn aan. Een zware week of pijn remt de opbouw van de volgende week af; een lichte week geeft nooit automatisch extra.</p></details>'}
 // optionele kracht en mobiliteit (niet in de weektotalen)
 const KRA={A:["Kracht A (±20')",[["Squat","3 × 10–12"],["Lunges","3 × 8 per been"],["Kuitheffen","3 × 15"],["Plank","3 × 30–40\""],["Bruggetje","3 × 12"]]],B:["Kracht B (±20')",[["Step-ups","3 × 10 per been"],["Deadlift op één been","3 × 8 per been"],["Zijplank","3 × 20–30\" per kant"],["Dead bug","3 × 10"],["Kuitheffen op één been","3 × 10 per been"]]],M:["Mobiliteit (±10')",[["Kat-koe","10 ×"],["Heupopener in uitvalspas","30\" per kant"],["Kuitstretch tegen een muur","30\" per kant"],["Borst openen in een deuropening","30\""]]]};
@@ -2213,7 +2278,7 @@ document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.c
   else if(b.id==="ag-copy"){try{await navigator.clipboard.writeText(agUrl(AGT));m.textContent="Link gekopieerd. Voeg hem in je agenda-app toe als abonnement (agenda via URL)."}catch(x){prompt("Kopieer deze link:",agUrl(AGT))}}
   else if(b.id==="ag-off"){if(b.dataset.zeker!=="1"){b.dataset.zeker="1";b.textContent="Klik nog eens: de link werkt dan niet meer";return}await sb.from("agenda_feed").delete().eq("user_id",ME.id);AGT=null;agR();agendaR();m.textContent="De koppeling is gestopt. Verwijder het abonnement ook in je agenda-app, dan verdwijnen de activiteiten daar."}});
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("#agtip [data-goto]");if(!a)return;e.preventDefault();location.hash="#instellingen"+(catOf(a.dataset.goto)?"/"+catOf(a.dataset.goto):"");setTimeout(()=>{const el=$(a.dataset.goto);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})},150)});
-if(/[?&]test\b/.test(location.search))window.__plan={session:(d)=>session(A().p,d),ramp:(i)=>{const w=rampWeek(A().p,i);return{m:w.m,w:w.w,k:w.k,V:Math.round(w.V),T:w.T,rec:w.rec,why:w.why,G:w.G}},lv:()=>NVL(A().p),real:()=>realism(A().p).map(x=>[x.soort,x.wk,x.need]),zone:()=>{const a=A();return a.log.filter(l=>l.st).map(l=>{const x=session0(a.p,l.datum);return[l.datum,x&&x.s,JSON.stringify(ttFrom(l.st,30)),!!(a.p.ztest||{})[l.datum]]})}};
+if(/[?&]test\b/.test(location.search))window.__plan={parse:(d)=>{const x=session(A().p,d),R=sParse(A().p,x);return R?{ok:R.ok,km:R.km,min:R.min,pr:R.pr.map(q=>[q.k,q.km,q.min,q.t])}:null},session:(d)=>session(A().p,d),ramp:(i)=>{const w=rampWeek(A().p,i);return{m:w.m,w:w.w,k:w.k,V:Math.round(w.V),T:w.T,rec:w.rec,why:w.why,G:w.G}},lv:()=>NVL(A().p),real:()=>realism(A().p).map(x=>[x.soort,x.wk,x.need]),zone:()=>{const a=A();return a.log.filter(l=>l.st).map(l=>{const x=session0(a.p,l.datum);return[l.datum,x&&x.s,JSON.stringify(ttFrom(l.st,30)),!!(a.p.ztest||{})[l.datum]]})}};
 function all(){if(AUTHST!=="klaar")return;if(AGT===undefined&&!window.__agl){window.__agl=1;agLoad()}else agR();try{fotoR()}catch(e){}document.body.classList.toggle("conly",CO(A().p));who();goalsR();strip();hero();metricsR();peilR();weekR();anaR();feelR();plan();logList();linkR();meldR();gear();settings();coachSel();ledenR();zonesR();clubR();coachR()}
 const VIEWS=["vandaag","plan","club","coach","logboek","zones","materiaal","instellingen"];
 /* ---------- instellingen in categorieën ---------- */
